@@ -12,16 +12,94 @@ import helpdesk as hd
 
 DEBUG = True
 
+#----------------------------------------------------------------- DATA IMPORT -----------------------------------------------------------------
+
+#----------------------------------------------------------------- Betfair Data -----------------------------------------------------------------
+
+
+df_win = hd.import_all_csvfiles_into_df(path= 'D:\\GDrive\\Analyticsflex\\Racing\\Data_dwbfprices\\Win', drop_dups = False , check_for_word = '122021.', DEBUG = False)
+summ_win = hd.describe_df(df_win)
+
+df_plc = hd.import_all_csvfiles_into_df(path= 'D:\\GDrive\\Analyticsflex\\Racing\\Data_dwbfprices\\Place', drop_dups = False , check_for_word = '122021.', DEBUG = False)
+summ_plc = hd.describe_df(df_plc)
+
+if DEBUG:
+    print(df_plc.shape)
+    print(df_win.shape)
+
+
+events_win = set(df_win.EVENT_ID.unique())
+selection_win = set(df_win.SELECTION_ID.unique())
+print(len(events_win ))
+
+events_plc = set(df_plc.EVENT_ID.unique())
+selection_plc = set(df_plc.SELECTION_ID.unique())
+print(len(events_plc ))
+
+interse_events = events_win.intersection(events_plc)
+print(len(interse_events))
+
+interse_selection = events_win.intersection(selection_plc)
+print(len(interse_selection))
+
+
+print(df_win.columns.values.tolist())
+print(df_plc.columns.values.tolist())
+
+
+print(df_win.shape)
+print(df_plc.shape)
+
+df_main = pd.merge( df_win, df_plc, on = ['EVENT_DT', 'SELECTION_NAME'] , how = 'left', suffixes=('_WIN', '_PLC'))
+print(df_main.shape)
+
+summ_main = hd.describe_df(df_main)
+
+temp_win = df_win[df_win.EVENT_ID.isin([192053304])]
+temp_plc = df_win[df_win.EVENT_ID.isin([192053305])]
+
+
+
+#----------------------------------------------------------------- Fast Track Data -----------------------------------------------------------------
+
 res_raw = pd.read_csv('C:\\Users\\karan\\Documents\\Data\\racing\\dog_results_20210101_20220424.csv')
 
 if DEBUG: print(res_raw.shape) #79464
-if DEBUG: res_raw[ ~(res_raw.Place.isin(['D','F','N','R','S','T',''])) ].shape # 66608
+if DEBUG: res_raw[ ~(res_raw.Place.isin( ['D','F','N','R','S','T',''])) ].shape # 66608
 
-res_raw2 = res_raw[ ~(res_raw.Place.isin(['D','F','N','R','S','T',''])) ]
+res_raw2 = res_raw[ ~(res_raw.Place.isin( ['D','F','N','R','S','T',''])) ]
 res_ = res_raw2[~res_raw2.Place.isna()]
 if DEBUG: print(res_.shape) #65839
 
 #del res_raw, res_raw2
+
+race_raw = pd.read_csv('C:\\Users\\karan\\Documents\\Data\\racing\\race_details_20210101_20220424.csv')
+
+if DEBUG: print(race_raw.shape) #8,949
+
+
+print(res_raw.columns.values.tolist())
+print(race_raw.columns.values.tolist())
+
+print(res_raw.shape)
+print(race_raw.shape)
+
+df_ft_merg = pd.merge(res_raw, race_raw, left_on = 'RaceId', right_on = '@id', how = 'left')
+
+print(df_ft_merg.shape)
+
+summ_ft_merg = hd.describe_df(df_ft_merg)
+
+
+
+#----------------------------------------------------------------- Merge a) BF b) FT Data -----------------------------------------------------------------
+
+
+'Try on Race Date + GH Name (which includes the gate number & Uppercase all)'
+
+pd.merge(df_main, res_raw)
+
+
 
 #----------------------------------------------------------------- EXPLORATORY DATA ANALYSIS -----------------------------------------------------------------
 
