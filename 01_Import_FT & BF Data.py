@@ -5,10 +5,49 @@ Spyder Editor
 This is a temporary script file.
 """
 
+"""
+OUTLINES
+    a) Import BF Data and Merge
+    b) Import FT Data and Merge
+    c) Combine BF & FT Data based on Key
+
+
+DETAILS
+    a) Import BF Data and Merge
+        Import BF Win Data
+        Import BF Place Data
+        Add ['DogName', 'Track', 'EventDt'] columns for merge with FT data, capitalise DogName for merge and remove special characters
+        Remove RACES where the Place data is missing
+        Remove Non-Australian Data
+        Remove corrupt Box data
+        
+    b) Import FT Data and Merge
+        Import Results Data
+        Import Racing Data
+        Replace special characters in DogName with nothing and capitalise them for merge
+        Change Track name to match up with BF Data
+        
+
+    c) Find the merge key
+        so far the ['MENU_HINT','Event_Dt','Track'] is giving the best merge.
+    
+
+NEXT STEPS
+
+
+    
+    - Either get rid of races with missing values
+
+
+"""
+
+
+
 import pandas as pd, numpy as np
 
 import helpdesk as hd
 
+import datetime
 
 DEBUG = True
 
@@ -16,90 +55,373 @@ DEBUG = True
 
 #----------------------------------------------------------------- Betfair Data -----------------------------------------------------------------
 
+df_win_raw = hd.import_all_csvfiles_into_df(path= 'D:\\GDrive\\Analyticsflex\\Racing\\Data_dwbfprices\\Win', drop_dups = False , check_for_word = '122021.', DEBUG = False)
+if DEBUG : print(df_win_raw.shape) # 55,537
 
-df_win = hd.import_all_csvfiles_into_df(path= 'D:\\GDrive\\Analyticsflex\\Racing\\Data_dwbfprices\\Win', drop_dups = False , check_for_word = '122021.', DEBUG = False)
+df_win = df_win_raw[ df_win_raw.MENU_HINT.str.contains('AUS') ]
+if DEBUG : print(df_win.shape) # 28,133
+
+del df_win_raw
+
 summ_win = hd.describe_df(df_win)
 
-df_plc = hd.import_all_csvfiles_into_df(path= 'D:\\GDrive\\Analyticsflex\\Racing\\Data_dwbfprices\\Place', drop_dups = False , check_for_word = '122021.', DEBUG = False)
+
+df_plc_raw = hd.import_all_csvfiles_into_df(path= 'D:\\GDrive\\Analyticsflex\\Racing\\Data_dwbfprices\\Place', drop_dups = False , check_for_word = '122021.', DEBUG = False)
+if DEBUG : print(df_plc_raw.shape) # 51,481
+
+df_plc = df_plc_raw[df_plc_raw.MENU_HINT.str.contains('AUS')] 
+if DEBUG : print(df_plc.shape) # 27,565
+
 summ_plc = hd.describe_df(df_plc)
 
 if DEBUG:
     print(df_plc.shape)
     print(df_win.shape)
 
-
-events_win = set(df_win.EVENT_ID.unique())
-selection_win = set(df_win.SELECTION_ID.unique())
-print(len(events_win ))
-
-events_plc = set(df_plc.EVENT_ID.unique())
-selection_plc = set(df_plc.SELECTION_ID.unique())
-print(len(events_plc ))
-
-interse_events = events_win.intersection(events_plc)
-print(len(interse_events))
-
-interse_selection = events_win.intersection(selection_plc)
-print(len(interse_selection))
-
-
-print(df_win.columns.values.tolist())
-print(df_plc.columns.values.tolist())
+    # Checking for overlap between the EVENT IDs 
+    events_win = set(df_win.EVENT_ID.unique())
+    selection_win = set(df_win.SELECTION_ID.unique())
+    print(len(events_win ))
+    
+    events_plc = set(df_plc.EVENT_ID.unique())
+    selection_plc = set(df_plc.SELECTION_ID.unique())
+    print(len(events_plc ))
+    
+    interse_events = events_win.intersection(events_plc)
+    print(len(interse_events))
+    
+    interse_selection = events_win.intersection(selection_plc)
+    print(len(interse_selection))
 
 
-print(df_win.shape)
-print(df_plc.shape)
 
-df_main = pd.merge( df_win, df_plc, on = ['EVENT_DT', 'SELECTION_NAME'] , how = 'left', suffixes=('_WIN', '_PLC'))
-print(df_main.shape)
+    # Details for Merge
+    print(df_win.columns.values.tolist())
+    print(df_plc.columns.values.tolist())
 
-summ_main = hd.describe_df(df_main)
+    print(df_win.shape)
+    print(df_plc.shape)
 
-temp_win = df_win[df_win.EVENT_ID.isin([192053304])]
-temp_plc = df_win[df_win.EVENT_ID.isin([192053305])]
 
+df_bf_raw = pd.merge(df_win, df_plc, on = ['MENU_HINT', 'EVENT_DT', 'SELECTION_NAME'] , how = 'left', suffixes=('_WIN', '_PLC')).sort_values(by = ['EVENT_DT', 'MENU_HINT', 'SELECTION_NAME'])
+if DEBUG: print(df_bf_raw.shape)
+
+#df_bf_raw.EVENT_NAME_PLC.value_counts(dropna = False)
+
+
+# --------- Adding Columns of Interst to BF Data --------- 
+
+# Example 30-11-2021 09:37
+#df_bf_raw['Event_Dt'] = pd.to_datetime(df_bf_raw['EVENT_DT'], infer_datetime_format = True ).dt.date
+df_bf_raw['Event_Dt'] = pd.to_datetime(df_bf_raw['EVENT_DT'], format = '%d-%m-%Y %H:%M').dt.date
+
+
+
+df_bf_raw.loc[:,"Box"] = df_bf_raw["SELECTION_NAME"].str.split(' ', 1, expand=True)[0].str.replace('.','')
+df_bf_raw.loc[:,"Rug"] = df_bf_raw["SELECTION_NAME"].str.split(' ', 1, expand=True)[0].str.replace('.','')
+
+df_bf_raw.loc[:,"DogName"] = df_bf_raw["SELECTION_NAME"].str.split(' ', 1, expand=True)[1].str.upper().replace(".","").replace("'","")
+
+#qc_DogName_bf = df_bf.DogName.value_counts()
+
+df_bf_raw[['country', 'race_track_details']] = df_bf_raw['MENU_HINT'].str.split('/', 1, expand = True )
+df_bf_raw.loc[:,"country"] = df_bf_raw["country"].str.strip()
+
+df_bf_raw[['Track', 'race_misc']] = df_bf_raw['race_track_details'].str.split('(', 1, expand = True )
+
+df_bf_raw.loc[:,"Track"] = df_bf_raw["Track"].str.strip()
+
+df_bf_raw.loc[df_bf_raw.Track.isin(['The Meadows']), "Track"] = 'Meadows'
+
+summ_df_bf_raw = hd.describe_df(df_bf_raw)
+
+
+'''
+
+Check if any other kind of Boxes Available in the BF Data
+
+    a) Just Crap Data
+        df_bf_raw.Box.value_counts()
+        temp = df_bf_raw[ ~df_bf_raw.Box.isin(['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16'])]
+        
+    b) Clear out races that have missing data for 'Place'
+        
+'''
+
+
+missing_menus_df = df_bf_raw.groupby('MENU_HINT').agg({'EVENT_NAME_PLC': lambda x: x.isnull().sum()}).reset_index().rename(columns = {'EVENT_NAME_PLC':'miss'})
+missing_menus = missing_menus_df[missing_menus_df.miss > 0].MENU_HINT.values.tolist()
+
+# Filtering for a) Australian b) Only GH in the races
+df_bf = df_bf_raw[ df_bf_raw.Box.isin(['1','2','3','4','5','6','7','8']) \
+                  & df_bf_raw.country.isin(['AUS']) \
+                      & ~(df_bf_raw.MENU_HINT.isin(missing_menus))]
+
+if DEBUG : print(df_bf.shape) # 24220
+    
+df_bf.loc[:,"Box"] = df_bf["Box"].astype(float)
+
+#df_bf_mg = df_bf[ df_bf.Rug.isin(['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16']) & df_bf.country.isin(['AUS'])]
+df_bf.loc[:,"Rug"] = df_bf["Rug"].astype(float)
+
+summ_df_bf = hd.describe_df(df_bf)
 
 
 #----------------------------------------------------------------- Fast Track Data -----------------------------------------------------------------
 
-res_raw = pd.read_csv('C:\\Users\\karan\\Documents\\Data\\racing\\dog_results_20210101_20220424.csv')
 
-if DEBUG: print(res_raw.shape) #79464
-if DEBUG: res_raw[ ~(res_raw.Place.isin( ['D','F','N','R','S','T',''])) ].shape # 66608
+'''
 
-res_raw2 = res_raw[ ~(res_raw.Place.isin( ['D','F','N','R','S','T',''])) ]
+Place 
+    1 to 8 
+    In case the GH did not finish the race, but was in the box
+        T - Tailed Off
+        B - Stayed Back
+        F - Fell
+        P - Pulled Up        
+        
+        R ?
+        S ?
+
+
+
+'''
+
+
+# Importing Dog Race Results
+res_raw = pd.read_csv('C:\\Users\\karan\\Documents\\Data\\racing\\dog_results_20211201_20211231.csv')
+res_raw.loc[:,"DogName"] = res_raw["DogName"].str.replace("'","").str.replace(".","")
+if DEBUG: print(res_raw.shape) #37,710
+
+
+#if DEBUG: res_raw[ ~(res_raw.Place.isin( ['D','F','N','R','S','T',''])) ].shape # 66608
+if DEBUG: print(res_raw[ ~(res_raw.Place.isin( ['R','S'])) ].shape) # 32,180
+
+res_raw2 = res_raw[ ~(res_raw.Place.isin( ['R','S']))  ]
 res_ = res_raw2[~res_raw2.Place.isna()]
 if DEBUG: print(res_.shape) #65839
 
-#del res_raw, res_raw2
+del res_raw, res_raw2
 
-race_raw = pd.read_csv('C:\\Users\\karan\\Documents\\Data\\racing\\race_details_20210101_20220424.csv')
+#res_ = res_raw
 
-if DEBUG: print(race_raw.shape) #8,949
+# Importing Race Details 
+race_raw = pd.read_csv('C:\\Users\\karan\\Documents\\Data\\racing\\race_details_20211201_20211231.csv', parse_dates = True)
+race_raw['Event_Dt'] = pd.to_datetime(race_raw['date']).dt.date
+
+race_raw.loc[race_raw.Track.isin(['Murray Bridge (MBR)','Murray Bridge (MBS)']), "Track"] = 'Murray Bridge'
+race_raw.loc[race_raw.Track.isin(['Richmond (RIS)']), "Track"] = 'Richmond'
+
+race_raw.loc[race_raw.Track.isin(['Sandown (SAP)']), "Track"] = 'Sandown Park'
+
+race_raw.loc[race_raw.Track.isin(['Meadows (MEP)']), "Track"] = 'Meadows'
+race_raw.loc[race_raw.Track.isin(['The Meadows']), "Track"] = 'Meadows'
 
 
-print(res_raw.columns.values.tolist())
-print(race_raw.columns.values.tolist())
+if DEBUG : print(race_raw.shape)
 
-print(res_raw.shape)
-print(race_raw.shape)
+race_ = race_raw[ ~race_raw.Track.str.contains('NZ')]
+if DEBUG : print(race_.shape)
 
-df_ft_merg = pd.merge(res_raw, race_raw, left_on = 'RaceId', right_on = '@id', how = 'left')
+del race_raw
 
-print(df_ft_merg.shape)
+if DEBUG: print(race_.dtypes)
 
-summ_ft_merg = hd.describe_df(df_ft_merg)
+if DEBUG:
+    print(res_.columns.values.tolist())
+    print(race_.columns.values.tolist())
+    
+    print(res_.shape)
+    print(race_.shape)
 
+df_ft = pd.merge(res_, race_, left_on = 'RaceId', right_on = '@id', how = 'inner')
+if DEBUG: print(df_ft.shape) #28,610
+
+#qc_DogName = df_ft_merg.DogName.value_counts()
+
+summ_ft = hd.describe_df(df_ft)
+
+
+print( df_ft.columns.values.tolist() )
+
+print( df_ft.Event_Dt.value_counts() )
+
+
+#----------------------------------------------------------------- Sets Track a) BF b) FT Data -----------------------------------------------------------------
+
+ft_trk = df_ft.Track.unique()
+
+ft_track = set(df_ft.Track.unique())
+print(len(ft_track))
+
+bf_trk = df_bf[ df_bf.country.isin(['AUS'])].Track.unique()
+
+bf_track = set(df_bf[ df_bf.country.isin(['AUS'])].Track.unique())
+print(len(bf_track))
+
+inters = ft_track.intersection(bf_track)
+print(len(inters))
 
 
 #----------------------------------------------------------------- Merge a) BF b) FT Data -----------------------------------------------------------------
 
-
 'Try on Race Date + GH Name (which includes the gate number & Uppercase all)'
 
-pd.merge(df_main, res_raw)
+# Looking at FastTrack Dataset
+pd.crosstab(df_ft.Rug, df_ft.Box, dropna= False)
+
+# Merging the Datasets
+
+#df_ft.shape
+#df_ft[ df_ft['Event_Dt'] >= datetime.datetime.strptime('2021-12-01' , "%Y-%m-%d").date() ].shape
 
 
+
+'''
+FAILED : Merge Key ['Event_Dt','DogName', 'Rug']
+
+print(df_bf[ df_bf['Event_Dt'] >= datetime.datetime.strptime('2021-12-01' , "%Y-%m-%d").date() ].shape)
+
+df_final_rug = pd.merge( df_bf[ df_bf['Event_Dt'] >= datetime.datetime.strptime('2021-12-01' , "%Y-%m-%d").date() ]\
+                    , df_ft[ df_ft['Event_Dt'] >= datetime.datetime.strptime('2021-12-01' , "%Y-%m-%d").date() ]\
+                        , on = ['Event_Dt','DogName', 'Rug'] , how = 'left')\
+                            .sort_values(by = ['MENU_HINT_WIN','EVENT_NAME_WIN','SELECTION_NAME'])
+summ_df_final_rug = hd.describe_df(df_final_rug)
+print(df_final_rug.shape)
+'''
+
+
+'''
+CURRENT MERGE KEY : ['Event_Dt','DogName', 'Rug']
+
+'''
+
+print(df_bf.shape)
+print(df_bf.Event_Dt.value_counts())
+
+print(df_bf[ df_bf['Event_Dt'] >= datetime.datetime.strptime('2021-12-01' , "%Y-%m-%d").date() ].shape) # 27,144
+
+df_final_box = pd.merge( df_bf[ df_bf['Event_Dt'] >= datetime.datetime.strptime('2021-12-01' , "%Y-%m-%d").date() & df_bf[ df_bf['Event_Dt'] <= datetime.datetime.strptime('2021-12-30' , "%Y-%m-%d").date() ]\
+                    , df_ft[ df_ft['Event_Dt'] >= datetime.datetime.strptime('2021-12-01' , "%Y-%m-%d").date() & df_ft['Event_Dt'] <= datetime.datetime.strptime('2021-12-30' , "%Y-%m-%d").date() ]\
+                        , on = ['Event_Dt','DogName', 'Box'] , how = 'left')\
+                            .sort_values(by = ['MENU_HINT','EVENT_NAME_WIN','SELECTION_NAME'])
+summ_df_final_box = hd.describe_df(df_final_box)
+# 6.12% Missing of 1,661 / 27,114 records
+
+print(df_final_box.shape)
+# 2560
+
+'''
+TRY : Merge Key -> ['Event_Dt','DogName', 'Track']
+'''
+
+print(df_bf.shape) # 24,220
+print(df_bf[ df_bf['Event_Dt'] >= datetime.datetime.strptime('2021-12-01' , "%Y-%m-%d").date() ].shape) # 23,256
+
+df_final_v3 = pd.merge( df_bf[ (df_bf['Event_Dt'] >= datetime.datetime.strptime('2021-12-01' , "%Y-%m-%d").date() ) & (df_bf['Event_Dt'] <= datetime.datetime.strptime('2021-12-30' , "%Y-%m-%d").date() ) ]\
+                    , df_ft[ (df_ft['Event_Dt'] >= datetime.datetime.strptime('2021-12-01' , "%Y-%m-%d").date() ) & ( df_ft['Event_Dt'] <= datetime.datetime.strptime('2021-12-30' , "%Y-%m-%d").date() )]\
+                        , on = ['Event_Dt','DogName', 'Track'] , how = 'left')\
+                            .sort_values(by = ['MENU_HINT','EVENT_NAME_WIN','SELECTION_NAME'])
+
+print(df_final_v3.shape) # 23,256 - implies No NxN match
+
+summ_df_final_v3 = hd.describe_df(df_final_v3)
+#3.83% MISMATCH, 892 / 22,256 records
+#2.94% MISMATCH, 678 / 23,256 records - some duplicates arrived
+
+
+df_final_v3.Place.value_counts()
+
+
+'''
+find out duplicates and a logic to delete the redundant ones
+    which is the correct box - the ones assigned with a number or a letter
+
+'''
+
+
+
+#
+qc = df_final[df_final.isna()]
+
+df_final.Event_Dt.value_counts(dropna = False)
+
+
+
+od_bf = df_bf[ df_bf['Event_Dt'] >= datetime.datetime.strptime('2021-12-15' , "%Y-%m-%d").date() ]
+
+od_ft = df_ft[ df_ft['Event_Dt'] >= datetime.datetime.strptime('2021-12-15' , "%Y-%m-%d").date() ]
+
+
+x1 = od_bf.Track.value_counts()
+x2 = od_ft.Track.value_counts()
+
+od_qc_left = pd.merge( od_bf \
+                    , od_ft\
+                        , on = ['Event_Dt','DogName', 'Track'] , how = 'left')\
+                            .sort_values(by = ['MENU_HINT','EVENT_NAME_WIN','SELECTION_NAME'])
+
+print(od_qc_left.shape) # 388 FT Nans from 12456 rows, a missmath % of 3.115
+summ_df_od_qc_left = hd.describe_df(od_qc_left)
+
+
+od_qc_left.groupby( [ 'Box_x' ] ).agg({'Box_y': lambda x: x.isnull().sum()}).reset_index().rename(columns = {'Box_y':'miss'})
+
+pd.crosstab(od_qc_left.Box_x, od_qc_left.Box_y, dropna = False)
+
+print(od_qc_left.Box_x.value_counts())
+
+'''
+1.0     1606
+2.0     1606
+4.0     1597
+8.0     1588
+7.0     1580
+3.0     1394
+6.0     1388
+5.0     1342
+9.0      256
+10.0      99
+Name: Box_x, dtype: int64
+
+'''
+
+
+od_qc_righ = pd.merge( od_bf_mg \
+                    , od_ft\
+                        , on = ['Event_Dt','DogName', 'Box'] , how = 'right')\
+                            .sort_values(by = ['MENU_HINT_WIN','EVENT_NAME_WIN','SELECTION_NAME'])
+
+print(od_qc_righ.shape) # 958 rows , 217 Na
+summ_df_od_qc_righ = hd.describe_df(od_qc_righ)
+
+del od_qc_outer
+del summ_df_od_qc_oute 
+
+print(od_bf.Track.unique().tolist())
+print(od_ft.Track.unique().tolist())
+
+
+print(od_bf.columns.values.tolist())
+print(od_ft.columns.values.tolist())
+
+od_qc_outer = pd.merge( od_bf \
+                    , od_ft\
+                        , on = ['Event_Dt','DogName', 'Track'] , how = 'outer')\
+                            .sort_values(by = ['MENU_HINT','EVENT_NAME_WIN','SELECTION_NAME'])
+
+print(od_qc_outer.shape) # 1264,
+summ_df_od_qc_oute = hd.describe_df(od_qc_outer)
+
+
+
+
+
+
+print(od_main_mg.Event_Dt.value_counts())
+
+print(df_ft_merg.Event_Dt.value_counts())
+print(df_ft_merg.EVENT_DT.value_counts())
 
 #----------------------------------------------------------------- EXPLORATORY DATA ANALYSIS -----------------------------------------------------------------
 
