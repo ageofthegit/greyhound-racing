@@ -43,7 +43,7 @@ NEXT STEPS
 
 
 
-import pandas as pd, numpy as np
+import pandas as pd, numpy as np, calendar
 
 import helpdesk as hd
 
@@ -55,24 +55,49 @@ DEBUG = True
 
 #----------------------------------------------------------------- Betfair Data -----------------------------------------------------------------
 
-df_win_raw = hd.import_all_csvfiles_into_df(path= 'D:\\GDrive\\Analyticsflex\\Racing\\Data_dwbfprices\\Win', drop_dups = False , check_for_word = '122021.', DEBUG = False)
-if DEBUG : print(df_win_raw.shape) # 55,537
+#df_win_raw = hd.import_all_csvfiles_into_df(path= 'D:\\GDrive\\Analyticsflex\\Racing\\Data_dwbfprices\\Win', drop_dups = False , check_for_word = '122021.', DEBUG = False)
+df_win_raw = hd.import_all_csvfiles_into_df(path= 'D:\\GDrive\\Analyticsflex\\Racing\\Data_dwbfprices\\Win', drop_dups = True, check_for_word = '2021.', DEBUG = False)
+if DEBUG : print(df_win_raw.shape) 
+# 55,537 for 2021 DEC
+# 651,129 for 2021
 
-df_win = df_win_raw[ df_win_raw.MENU_HINT.str.contains('AUS') ]
-if DEBUG : print(df_win.shape) # 28,133
+summ_win_raw = hd.describe_df(df_win_raw) # 18 missing values in the whole year! Drop!!
 
-del df_win_raw
+df_win = df_win_raw[ df_win_raw.MENU_HINT.str.contains('AUS', na = False) ]
+if DEBUG : print(df_win.shape) 
+# 28,133 for 2021 DEC
+# 322,471 for 2021
 
 summ_win = hd.describe_df(df_win)
 
+del df_win_raw
 
-df_plc_raw = hd.import_all_csvfiles_into_df(path= 'D:\\GDrive\\Analyticsflex\\Racing\\Data_dwbfprices\\Place', drop_dups = False , check_for_word = '122021.', DEBUG = False)
-if DEBUG : print(df_plc_raw.shape) # 51,481
+df_win.loc[ :, "EVENT_DT_FIX"] = df_win.EVENT_DT.str.replace('/','-')
+#evntdt_qc = df_win[ df_win.EVENT_DT.str.contains('/') ][ ["EVENT_DT","EVENT_DT_FIX"] ]
 
-df_plc = df_plc_raw[df_plc_raw.MENU_HINT.str.contains('AUS')] 
-if DEBUG : print(df_plc.shape) # 27,565
+
+#df_plc_raw = hd.import_all_csvfiles_into_df(path= 'D:\\GDrive\\Analyticsflex\\Racing\\Data_dwbfprices\\Place', drop_dups = False , check_for_word = '122021.', DEBUG = False)
+df_plc_raw = hd.import_all_csvfiles_into_df(path= 'D:\\GDrive\\Analyticsflex\\Racing\\Data_dwbfprices\\Place', drop_dups = True, check_for_word = '2021.', DEBUG = False)
+
+if DEBUG : print(df_plc_raw.shape)
+# 51,481 for 2021 DEC 
+# 603,509 for 2021
+
+summ_plc_raw = hd.describe_df(df_plc_raw)
+
+df_plc = df_plc_raw[df_plc_raw.MENU_HINT.str.contains('AUS', na = False)]
+if DEBUG : print(df_plc.shape)
+# 27,565 for 2021 DEC
+# 315,725 for 2021
 
 summ_plc = hd.describe_df(df_plc)
+
+df_plc.loc[ :, "EVENT_DT_FIX"] = df_plc.EVENT_DT.str.replace('/','-')
+
+del df_plc_raw
+#evntdt_qc = df_win[ df_win.EVENT_DT.str.contains('/') ][ ["EVENT_DT","EVENT_DT_FIX"] ]
+
+
 
 if DEBUG:
     print(df_plc.shape)
@@ -103,8 +128,17 @@ if DEBUG:
     print(df_plc.shape)
 
 
-df_bf_raw = pd.merge(df_win, df_plc, on = ['MENU_HINT', 'EVENT_DT', 'SELECTION_NAME'] , how = 'left', suffixes=('_WIN', '_PLC')).sort_values(by = ['EVENT_DT', 'MENU_HINT', 'SELECTION_NAME'])
+df_bf_raw = pd.merge(df_win, df_plc, on = ['MENU_HINT', 'EVENT_DT_FIX', 'SELECTION_NAME'] , how = 'left', suffixes=('_WIN', '_PLC'))\
+                .sort_values(by = ['EVENT_DT_FIX', 'MENU_HINT', 'SELECTION_NAME'])\
+                    .drop(columns = {'EVENT_DT_WIN', 'EVENT_DT_PLC'})
+                    
 if DEBUG: print(df_bf_raw.shape)
+# 322,471 for 2021 from 323473 - There is a nxn match
+
+summ_df_bf_raw = hd.describe_df(df_bf_raw)
+
+
+
 
 #df_bf_raw.EVENT_NAME_PLC.value_counts(dropna = False)
 
@@ -113,8 +147,7 @@ if DEBUG: print(df_bf_raw.shape)
 
 # Example 30-11-2021 09:37
 #df_bf_raw['Event_Dt'] = pd.to_datetime(df_bf_raw['EVENT_DT'], infer_datetime_format = True ).dt.date
-df_bf_raw['Event_Dt'] = pd.to_datetime(df_bf_raw['EVENT_DT'], format = '%d-%m-%Y %H:%M').dt.date
-
+df_bf_raw['Event_Dt_a'] = pd.to_datetime(df_bf_raw['EVENT_DT_FIX'], format = '%d-%m-%Y %H:%M').dt.date
 
 
 df_bf_raw.loc[:,"Box"] = df_bf_raw["SELECTION_NAME"].str.split(' ', 1, expand=True)[0].str.replace('.','')
@@ -127,9 +160,23 @@ df_bf_raw.loc[:,"DogName"] = df_bf_raw["SELECTION_NAME"].str.split(' ', 1, expan
 df_bf_raw[['country', 'race_track_details']] = df_bf_raw['MENU_HINT'].str.split('/', 1, expand = True )
 df_bf_raw.loc[:,"country"] = df_bf_raw["country"].str.strip()
 
-df_bf_raw[['Track', 'race_misc']] = df_bf_raw['race_track_details'].str.split('(', 1, expand = True )
+df_bf_raw[['Track', 'Event_Dt_MenuHint']] = df_bf_raw['race_track_details'].str.split('(', 1, expand = True )
 
 df_bf_raw.loc[:,"Track"] = df_bf_raw["Track"].str.strip()
+
+#df_bf_raw.loc[:,"Event_Dt_MenuHint"] = df_bf_raw["Event_Dt_MenuHint"].str.replace(r'\bAUS) \b','')
+#df_bf_raw.loc[:,"Event_Dt_MenuHint_2"] = df_bf_raw["Event_Dt_MenuHint"].str.split(')', 1, expand = True)[1]
+
+
+df_bf_raw.loc[:,"Day"]  = df_bf_raw.Event_Dt_MenuHint.str.extract(r'([0-9.]+)', expand = False).astype(int)
+df_bf_raw.loc[:,"Year"]  = pd.to_datetime(df_bf_raw['Event_Dt_a']).dt.year
+df_bf_raw.loc[:,"MonthName"]  = df_bf_raw.Event_Dt_MenuHint.str[-3:]
+#df_bf_raw.loc[:,'Month'] = df_bf_raw['MonthName'].apply(lambda x: calendar.month_abbr[x])
+df_bf_raw.loc[:,'Month'] = df_bf_raw['MonthName'].apply(lambda x: datetime.datetime.strptime(x, "%b").strftime("%m"))
+
+df_bf_raw.loc[:,'Event_Dt'] = pd.to_datetime( df_bf_raw[['Year', 'Month', 'Day']]).dt.date
+
+
 
 df_bf_raw.loc[df_bf_raw.Track.isin(['The Meadows']), "Track"] = 'Meadows'
 
@@ -157,7 +204,9 @@ df_bf = df_bf_raw[ df_bf_raw.Box.isin(['1','2','3','4','5','6','7','8']) \
                   & df_bf_raw.country.isin(['AUS']) \
                       & ~(df_bf_raw.MENU_HINT.isin(missing_menus))]
 
-if DEBUG : print(df_bf.shape) # 24220
+if DEBUG : print(df_bf.shape) 
+# 24220 for 2021 DEC
+# 270500 for 2021
     
 df_bf.loc[:,"Box"] = df_bf["Box"].astype(float)
 
@@ -165,6 +214,10 @@ df_bf.loc[:,"Box"] = df_bf["Box"].astype(float)
 df_bf.loc[:,"Rug"] = df_bf["Rug"].astype(float)
 
 summ_df_bf = hd.describe_df(df_bf)
+
+print(len(df_bf_raw.MENU_HINT.unique().tolist()))
+print(len(df_bf.MENU_HINT.unique().tolist()))
+# Lost about 3,420 / 4,053 races in the process of cleaning it up approx 15% of the races
 
 
 #----------------------------------------------------------------- Fast Track Data -----------------------------------------------------------------
@@ -189,9 +242,13 @@ Place
 
 
 # Importing Dog Race Results
-res_raw = pd.read_csv('C:\\Users\\karan\\Documents\\Data\\racing\\dog_results_20211201_20211231.csv')
+
+#res_raw = pd.read_csv('C:\\Users\\karan\\Documents\\Data\\racing\\dog_results_20211201_20211231.csv')
+res_raw = pd.read_csv('C:\\Users\\karan\\Documents\\Data\\racing\\dog_results_20210101_20220424.csv')
+
 res_raw.loc[:,"DogName"] = res_raw["DogName"].str.replace("'","").str.replace(".","")
-if DEBUG: print(res_raw.shape) #37,710
+if DEBUG: print(res_raw.shape) 
+# 79,464
 
 
 #if DEBUG: res_raw[ ~(res_raw.Place.isin( ['D','F','N','R','S','T',''])) ].shape # 66608
@@ -206,8 +263,13 @@ del res_raw, res_raw2
 #res_ = res_raw
 
 # Importing Race Details 
-race_raw = pd.read_csv('C:\\Users\\karan\\Documents\\Data\\racing\\race_details_20211201_20211231.csv', parse_dates = True)
+#race_raw = pd.read_csv('C:\\Users\\karan\\Documents\\Data\\racing\\race_details_20211201_20211231.csv', parse_dates = True)
+race_raw = pd.read_csv('C:\\Users\\karan\\Documents\\Data\\racing\\race_details_20210101_20220424.csv', parse_dates = True)
+
 race_raw['Event_Dt'] = pd.to_datetime(race_raw['date']).dt.date
+
+dtvalct = race_raw.Event_Dt.value_counts()
+
 
 race_raw.loc[race_raw.Track.isin(['Murray Bridge (MBR)','Murray Bridge (MBS)']), "Track"] = 'Murray Bridge'
 race_raw.loc[race_raw.Track.isin(['Richmond (RIS)']), "Track"] = 'Richmond'
@@ -241,10 +303,6 @@ if DEBUG: print(df_ft.shape) #28,610
 
 summ_ft = hd.describe_df(df_ft)
 
-
-print( df_ft.columns.values.tolist() )
-
-print( df_ft.Event_Dt.value_counts() )
 
 
 #----------------------------------------------------------------- Sets Track a) BF b) FT Data -----------------------------------------------------------------
@@ -292,9 +350,7 @@ print(df_final_rug.shape)
 
 
 '''
-CURRENT MERGE KEY : ['Event_Dt','DogName', 'Rug']
-
-'''
+MERGE KEY : ['Event_Dt','DogName', 'Box']
 
 print(df_bf.shape)
 print(df_bf.Event_Dt.value_counts())
@@ -312,25 +368,58 @@ print(df_final_box.shape)
 # 2560
 
 '''
+
+
+'''
 TRY : Merge Key -> ['Event_Dt','DogName', 'Track']
 '''
 
-print(df_bf.shape) # 24,220
-print(df_bf[ df_bf['Event_Dt'] >= datetime.datetime.strptime('2021-12-01' , "%Y-%m-%d").date() ].shape) # 23,256
+print(df_bf.shape) 
+# 23,533
 
-df_final_v3 = pd.merge( df_bf[ (df_bf['Event_Dt'] >= datetime.datetime.strptime('2021-12-01' , "%Y-%m-%d").date() ) & (df_bf['Event_Dt'] <= datetime.datetime.strptime('2021-12-30' , "%Y-%m-%d").date() ) ]\
-                    , df_ft[ (df_ft['Event_Dt'] >= datetime.datetime.strptime('2021-12-01' , "%Y-%m-%d").date() ) & ( df_ft['Event_Dt'] <= datetime.datetime.strptime('2021-12-30' , "%Y-%m-%d").date() )]\
+print(df_bf[ ( df_bf['Event_Dt'] >= datetime.datetime.strptime('2021-12-01' , "%Y-%m-%d").date() )\
+            & ( df_bf['Event_Dt'] <= datetime.datetime.strptime('2021-12-31' , "%Y-%m-%d").date() ) \
+                ].shape)
+# 22,613
+
+df_final_v3 = pd.merge( df_bf[ (df_bf['Event_Dt'] >= datetime.datetime.strptime('2021-12-01' , "%Y-%m-%d").date() ) & (df_bf['Event_Dt'] <= datetime.datetime.strptime('2021-12-31' , "%Y-%m-%d").date() ) ]\
+                    , df_ft[ (df_ft['Event_Dt'] >= datetime.datetime.strptime('2021-12-01' , "%Y-%m-%d").date() ) & ( df_ft['Event_Dt'] <= datetime.datetime.strptime('2021-12-31' , "%Y-%m-%d").date() )]\
                         , on = ['Event_Dt','DogName', 'Track'] , how = 'left')\
                             .sort_values(by = ['MENU_HINT','EVENT_NAME_WIN','SELECTION_NAME'])
 
-print(df_final_v3.shape) # 23,256 - implies No NxN match
+print(df_final_v3.shape) # 22,613 - NO nxn Match
 
 summ_df_final_v3 = hd.describe_df(df_final_v3)
-#3.83% MISMATCH, 892 / 22,256 records
-#2.94% MISMATCH, 678 / 23,256 records - some duplicates arrived
+#0.07% MISMATCH, 18 / 22,613 records 
 
+
+
+df_final_v3.groupby( [ 'Box_x' ] ).agg({'Box_y': lambda x: x.isnull().sum()}).reset_index().rename(columns = {'Box_y':'miss'})
+df_final_v3.groupby( [ 'Event_Dt' ] ).agg({'Box_y': lambda x: x.isnull().sum()}).reset_index().rename(columns = {'Box_y':'miss'})
+df_final_v3.groupby( [ 'Track' ] ).agg({'Box_y': lambda x: x.isnull().sum()}).reset_index().rename(columns = {'Box_y':'miss'})
+
+mh = df_final_v3.groupby( [ 'MENU_HINT' ] ).agg({'Box_y': lambda x: x.isnull().sum()}).reset_index().rename(columns = {'Box_y':'miss'})
+
+print(mh[mh.miss > 0].MENU_HINT.values.tolist())
+
+
+
+df_final_v3_outer = pd.merge( df_bf[ (df_bf['Event_Dt'] >= datetime.datetime.strptime('2021-12-01' , "%Y-%m-%d").date() ) & (df_bf['Event_Dt'] <= datetime.datetime.strptime('2021-12-30' , "%Y-%m-%d").date() ) ]\
+                    , df_ft[ (df_ft['Event_Dt'] >= datetime.datetime.strptime('2021-12-01' , "%Y-%m-%d").date() ) & ( df_ft['Event_Dt'] <= datetime.datetime.strptime('2021-12-30' , "%Y-%m-%d").date() )]\
+                        , on = ['Event_Dt','DogName', 'Track'] , how = 'outer')\
+                            .sort_values(by = ['MENU_HINT','EVENT_NAME_WIN','SELECTION_NAME'])
+
+
+qc = df_final_v3_outer[df_final_v3_outer.Track.isin(['Richmond'])]
+
+qc = df_final_v3_outer[df_final_v3_outer.MENU_HINT.isin( mh[mh.miss > 0].MENU_HINT.values.tolist() )]
+
+
+print(df_final_v3.Track.unique().tolist())
 
 df_final_v3.Place.value_counts()
+
+
 
 
 '''
