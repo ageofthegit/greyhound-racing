@@ -73,7 +73,8 @@ summ = Data()
 #----------------------------------------------------------------- Betfair Data -----------------------------------------------------------------
 
 #df.win_raw = hd.import_all_csvfiles_into_df(path= 'D:\\GDrive\\Analyticsflex\\Racing\\Data_dwbfprices\\Win', drop_dups = False , check_for_word = '122021.', DEBUG = False)
-df.win_raw = hd.import_all_csvfiles_into_df(path= 'D:\\GDrive\\Analyticsflex\\Racing\\Data_dwbfprices\\Win', drop_dups = True, check_for_word = '2021.', DEBUG = False)
+#df.win_raw = hd.import_all_csvfiles_into_df(path= 'D:\\GDrive\\Analyticsflex\\Racing\\Data_dwbfprices\\Win', drop_dups = True, check_for_word = '2021.', DEBUG = False)
+df.win_raw = hd.import_all_csvfiles_into_df(path= 'D:\\GDrive\\Analyticsflex\\Racing\\Data_dwbfprices\\Win', drop_dups = True, check_for_word = '2022.c', DEBUG = False)
 if DEBUG : print(df.win_raw.shape)
 # 55,537 for 2021 DEC
 # 651,129 for 2021
@@ -101,7 +102,8 @@ df.win.loc[ :, "EVENT_DT_FIX"] = df.win.EVENT_DT_INTERIM.apply(lambda x : pd.to_
 
 
 #df.plc_raw = hd.import_all_csvfiles_into_df(path= 'D:\\GDrive\\Analyticsflex\\Racing\\Data_dwbfprices\\Place', drop_dups = False , check_for_word = '122021.', DEBUG = False)
-df.plc_raw = hd.import_all_csvfiles_into_df(path= 'D:\\GDrive\\Analyticsflex\\Racing\\Data_dwbfprices\\Place', drop_dups = True, check_for_word = '2021.', DEBUG = False)
+#df.plc_raw = hd.import_all_csvfiles_into_df(path= 'D:\\GDrive\\Analyticsflex\\Racing\\Data_dwbfprices\\Place', drop_dups = True, check_for_word = '2021.', DEBUG = False)
+df.plc_raw = hd.import_all_csvfiles_into_df(path= 'D:\\GDrive\\Analyticsflex\\Racing\\Data_dwbfprices\\Place', drop_dups = True, check_for_word = '2022.c', DEBUG = False)
 
 if DEBUG : print(df.plc_raw.shape)
 # 51,481 for 2021 DEC 
@@ -128,8 +130,8 @@ del df.plc_raw
 #df.plc_heads = df.plc.head(1000)
 
 if DEBUG:
-    print(df.plc.shape)
     print(df.win.shape)
+    print(df.plc.shape)
 
     # Checking for overlap between the EVENT IDs 
     events_win = set(df.win.EVENT_ID.unique())
@@ -160,6 +162,8 @@ df.bf_raw = pd.merge(df.win, df.plc, on = ['MENU_HINT', 'EVENT_DT_FIX', 'SELECTI
                 .sort_values(by = ['EVENT_DT_FIX', 'MENU_HINT', 'SELECTION_NAME'])\
                     .drop(columns = {'EVENT_DT_WIN', 'EVENT_DT_PLC'})
                     
+summ.df_bf_raw = hd.describe_df(df.bf_raw)
+
 
 '''
 
@@ -271,7 +275,10 @@ df.bf_raw.loc[:,'Month'] = df.bf_raw['MonthName'].apply(lambda x: datetime.datet
 df.bf_raw.loc[:,'Event_Dt'] = pd.to_datetime( df.bf_raw[['Year', 'Month', 'Day']]).dt.date
 
 
+
+
 summ.df_bf_raw = hd.describe_df(df.bf_raw)
+tracks_temp = df.bf_raw.Track.unique()
 
 #Fix Track names to merge on with FT Later
 df.bf_raw.loc[df.bf_raw.Track.isin(['The Meadows']), "Track"] = 'Meadows'
@@ -339,9 +346,8 @@ df.bf_raw.loc[df.bf_raw.Track.isin(['Wgul']), "Track"] = 'Warragul'
 df.bf_raw.loc[df.bf_raw.Track.isin(['Gard']), "Track"] = 'The Gardens'
 
 
-tracks_qc = df.bf_raw.Track.unique().tolist()
-tracks_qc.sort()
-print(tracks_qc)
+tracks_temp_after = df.bf_raw.Track.unique().tolist()
+tracks_temp_after.sort()
 
 #APrk, Dapt
 '''
@@ -387,6 +393,8 @@ if DEBUG : print(df.bf.shape)
 # 24220 for 2021 DEC
 # 270500 for 2021
 # 271885 for 2021
+
+# 107042 in 2022 uptill May
     
 df.bf.loc[:,"Box"] = df.bf["Box"].astype(float)
 
@@ -397,7 +405,12 @@ summ.df_bf = hd.describe_df(df.bf)
 
 print(len(df.bf_raw.MENU_HINT.unique().tolist()))
 print(len(df.bf.MENU_HINT.unique().tolist()))
+
+# 2021
 # Lost about 3,437 / 4,053 races in the process of cleaning it up approx 15% of the races with missing Place Information
+
+# 2022 Jan to 2022 May
+# Lost about 1,348 / 1,902 races in the process of cleaning it up approx 30% of the races with missing Place Information
 
 
 
@@ -426,7 +439,7 @@ Place
 # Importing Dog Race Results
 
 #res_raw = pd.read_csv('C:\\Users\\karan\\Documents\\Data\\racing\\dog_results_20211201_20211231.csv')
-df.res_raw = pd.read_csv('C:\\Users\\karan\\Documents\\Data\\racing\\dog_results_20210101_20211231.csv')
+df.res_raw = pd.read_csv('C:\\Users\\karan\\Documents\\Data\\racing\\dog_results_20220101_20220531.csv')
 
 df.res_raw.loc[:,"DogName"] = df.res_raw["DogName"].str.replace("'","").str.replace(".","")
 if DEBUG: print(df.res_raw.shape) 
@@ -448,7 +461,7 @@ del df.res_raw, df.res_raw2
 
 # Importing Race Details 
 #race_raw = pd.read_csv('C:\\Users\\karan\\Documents\\Data\\racing\\race_details_20211201_20211231.csv', parse_dates = True)
-df.race_raw = pd.read_csv('C:\\Users\\karan\\Documents\\Data\\racing\\race_details_20210101_20211231.csv', parse_dates = True)
+df.race_raw = pd.read_csv('C:\\Users\\karan\\Documents\\Data\\racing\\race_details_20220101_20220531.csv', parse_dates = True)
 
 df.race_raw['Event_Dt'] = pd.to_datetime(df.race_raw['date']).dt.date
 
@@ -465,7 +478,13 @@ df.race_raw.loc[df.race_raw.Track.isin(['The Meadows']), "Track"] = 'Meadows'
 
 
 if DEBUG : print(df.race_raw.shape)
+
+# 2021
 # 52,103 Races
+
+# 2022 upto May
+# 21,002 Races
+
 
 df.race_ = df.race_raw[ ~df.race_raw.Track.str.contains('NZ')]
 
@@ -484,12 +503,16 @@ if DEBUG:
 
 df.ft = pd.merge(df.res_, df.race_, left_on = 'RaceId', right_on = '@id', how = 'inner', suffixes=('_DOG', '_RACE'))
 if DEBUG: print(df.ft.shape) 
+
+# 2021
 # 333,285
+
+# 2022 upto May
+# 132,558
 
 #qc_DogName = df.ft_merg.DogName.value_counts()
 
 summ.ft = hd.describe_df(df.ft)
-
 
 #----------------------------------------------------------------- Sets Track a) BF b) FT Data -----------------------------------------------------------------
 
@@ -567,23 +590,37 @@ TRY : Merge Key -> ['Event_Dt','DogName', 'Track']
 '''
 
 print(df.bf.shape) 
+
+# 2021
 # 271,885
 
+# 2022 upto May
+# 107,042
 
 # Checking the Merge on 1 Months worth of data
 
-print(df.bf[ ( df.bf['Event_Dt'] >= datetime.datetime.strptime('2021-01-01' , "%Y-%m-%d").date() )\
-            & ( df.bf['Event_Dt'] <= datetime.datetime.strptime('2021-12-31' , "%Y-%m-%d").date() ) \
+print(df.bf[ ( df.bf['Event_Dt'] >= datetime.datetime.strptime('2022-01-01' , "%Y-%m-%d").date() )\
+            & ( df.bf['Event_Dt'] <= datetime.datetime.strptime('2022-05-31' , "%Y-%m-%d").date() ) \
                 ].shape)
+
 # 22,696 - December 2021
 # 271,065 - 2021
 
-df.final_v3 = pd.merge( df.bf[ (df.bf['Event_Dt'] >= datetime.datetime.strptime('2021-01-01' , "%Y-%m-%d").date() ) & (df.bf['Event_Dt'] <= datetime.datetime.strptime('2021-12-31' , "%Y-%m-%d").date() ) ]\
-                    , df.ft[ (df.ft['Event_Dt'] >= datetime.datetime.strptime('2021-01-01' , "%Y-%m-%d").date() ) & ( df.ft['Event_Dt'] <= datetime.datetime.strptime('2021-12-31' , "%Y-%m-%d").date() )]\
+# 2022 Upto May
+# 106,307
+
+df.final_v3 = pd.merge( df.bf[ (df.bf['Event_Dt'] >= datetime.datetime.strptime('2022-01-01' , "%Y-%m-%d").date() ) & (df.bf['Event_Dt'] <= datetime.datetime.strptime('2022-05-31' , "%Y-%m-%d").date() ) ]\
+                    , df.ft[ (df.ft['Event_Dt'] >= datetime.datetime.strptime('2022-01-01' , "%Y-%m-%d").date() ) & ( df.ft['Event_Dt'] <= datetime.datetime.strptime('2022-05-31' , "%Y-%m-%d").date() )]\
                         , on = ['Event_Dt','DogName', 'Track'] , how = 'left')\
                             .sort_values(by = ['MENU_HINT','EVENT_NAME_WIN','SELECTION_NAME'])
 
-print(df.final_v3.shape) # 22,696 - NO nxn Match
+print(df.final_v3.shape) 
+
+# 2021
+# 22,696 - NO nxn Match
+
+# 2022 Upto May
+# 106,037 
 
 summ.df_final_v3 = hd.describe_df(df.final_v3)
 
@@ -593,6 +630,8 @@ summ.df_final_v3 = hd.describe_df(df.final_v3)
 
 #0.065% MISMATCH, 183 / 271,065 records 
 
+# 2022 upto May
+# 0.5% MISMATCH, 618 / 106,037 records 
 
 print(df.final_v3.Place.value_counts())
 
@@ -600,7 +639,12 @@ df.algodata = df.final_v3[ (~df.final_v3.Place.isin(['F','T','nan','P','B','N','
 
 print(df.algodata.shape)
 print(df.algodata.Place.value_counts())
+
+# 2021
 # 265805
+
+# 2022 Upto May
+# 104808
 
 summ.df_algodata = hd.describe_df(df.algodata)
 
@@ -732,8 +776,14 @@ print(df.ft_merg.EVENT_DT.value_counts())
 #----------------------------------------------------------------- Adding Columns -----------------------------------------------------------------
 
 if DEBUG: print(df.algodata.shape)
+
+# 2021 Data
 # 271,065
 # 268,505
+
+# 2022 Upto May
+# 104,808
+
 
 if DEBUG: print(df.algodata.Place.value_counts())
 
@@ -744,7 +794,6 @@ if DEBUG: print(df.algodata.pos.value_counts(dropna = False))
 
 df.algodata.loc[:,"pos"] = df.algodata["pos"].astype(int)
 
-
 df.algodata.loc[:,"flag_fav"] = df.algodata["StartPrice"].apply(lambda x : np.nan if pd.isna(x) else True if 'F' in x else False )
 df.algodata.loc[:,"flag_fav"] = df.algodata["flag_fav"].astype(bool)
 
@@ -752,16 +801,17 @@ df.algodata.loc[:,"StartPrice"] = df.algodata["StartPrice"].astype(str)
 df.algodata.loc[:,"sp"] = df.algodata.apply( lambda x: np.nan if pd.isna(x.flag_fav) else x["StartPrice"].replace('F','').replace('$','') if x.flag_fav  else x["StartPrice"].replace('$','') , axis = 1 )
 df.algodata.loc[:,"sp"] = df.algodata['sp'].astype(float)
 
-df.algodata.loc[:,"rank_"] = df.algodata.groupby( ['RaceId'] )['sp'].rank("dense", ascending=True)
+
+df.algodata.loc[:,"RANK_"] = df.algodata.groupby( ['RaceId'] )['BSP_WIN'].rank("dense", ascending=True)
 
 
-df.algodata.loc[:,"flag_top1"] = df.algodata.apply(lambda x : np.nan if pd.isna(x.rank_) else True if x.rank_ <= 1 else False, axis = 1)
+df.algodata.loc[:,"flag_top1"] = df.algodata.apply(lambda x : np.nan if pd.isna(x.RANK_) else True if x.RANK_ <= 1 else False, axis = 1)
 df.algodata.loc[:,"flag_top1"] = df.algodata["flag_top1"].astype(bool)
 
-df.algodata.loc[:,'flag_top2'] = df.algodata.apply(lambda x : np.nan if pd.isna(x.rank_) else True if x.rank_ <= 2 else False, axis = 1)
+df.algodata.loc[:,'flag_top2'] = df.algodata.apply(lambda x : np.nan if pd.isna(x.RANK_) else True if x.RANK_ <= 2 else False, axis = 1)
 df.algodata.loc[:,"flag_top2"] = df.algodata["flag_top2"].astype(bool)
 
-df.algodata.loc[:,'flag_top3'] = df.algodata.apply(lambda x : np.nan if pd.isna(x.rank_) else True if x.rank_ <= 3 else False, axis = 1)
+df.algodata.loc[:,'flag_top3'] = df.algodata.apply(lambda x : np.nan if pd.isna(x.RANK_) else True if x.RANK_ <= 3 else False, axis = 1)
 df.algodata.loc[:,"flag_top3"] = df.algodata["flag_top3"].astype(bool)
 
 
@@ -790,7 +840,7 @@ s1 - Strategy 1 (Favourite based strategies)
 
     2 Fav to Place
 
-s2 - Strategy 2 (Top 3 Based Strategies )
+s2 - Strategy 2 ( Top 3 Based Strategies )
     1 All top 3 to place 
     2 Any of the top 3 to win 
         bet on top 2 to win
@@ -873,7 +923,7 @@ print(df.algodata.columns.values)
 
 print(df.algodata.Month.value_counts())
 
-algo_sample = df.algodata[ df.algodata.Month.isin(['12']) ] 
+algo_sample = df.algodata[ df.algodata.Month.isin(['02']) ] 
 
 
 #----------------------------------------------------------------- Stability  -----------------------------------------------------------------
@@ -882,6 +932,9 @@ algo_sample = df.algodata[ df.algodata.Month.isin(['12']) ]
 algo_sample.groupby('EVENT_DT_FIX').agg({'p2_1':'sum'}).plot()
 
 algo_sample.groupby(['Month','Day']).agg({'p2_1':'sum', 's2_1':'sum'}).plot(kind = 'bar')
+
+
+df.algodata.groupby(['Month']).agg({'p2_1':'sum', 's2_1':'sum'}).plot(kind = 'bar')
 
 
 #----------------------------------------------------------------- Stability  -----------------------------------------------------------------
