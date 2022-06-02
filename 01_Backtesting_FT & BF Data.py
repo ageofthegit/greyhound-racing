@@ -772,7 +772,7 @@ print(df.ft_merg.EVENT_DT.value_counts())
 # 4 55 PM
 
 
-#----------------------------------------------------------------- EXPLORATORY DATA ANALYSIS -----------------------------------------------------------------
+#----------------------------------------------------------------- STRATEGY ANALYSIS -----------------------------------------------------------------
 
 #----------------------------------------------------------------- Adding Columns -----------------------------------------------------------------
 
@@ -786,14 +786,8 @@ if DEBUG: print(df.algodata.shape)
 # 104,808
 
 
-if DEBUG: print(df.algodata.Place.value_counts())
 
-df.algodata['Place'] = df.algodata['Place'].astype(str)
-df.algodata.loc[:,"pos"] = df.algodata.apply( lambda x: x['Place'].replace('=',''), axis = 1 )
-
-if DEBUG: print(df.algodata.pos.value_counts(dropna = False))
-
-df.algodata.loc[:,"pos"] = df.algodata["pos"].astype(int)
+# Expected
 
 df.algodata.loc[:,"flag_fav"] = df.algodata["StartPrice"].apply(lambda x : np.nan if pd.isna(x) else True if 'F' in x else False )
 df.algodata.loc[:,"flag_fav"] = df.algodata["flag_fav"].astype(bool)
@@ -801,6 +795,7 @@ df.algodata.loc[:,"flag_fav"] = df.algodata["flag_fav"].astype(bool)
 df.algodata.loc[:,"StartPrice"] = df.algodata["StartPrice"].astype(str)
 df.algodata.loc[:,"sp"] = df.algodata.apply( lambda x: np.nan if pd.isna(x.flag_fav) else x["StartPrice"].replace('F','').replace('$','') if x.flag_fav  else x["StartPrice"].replace('$','') , axis = 1 )
 df.algodata.loc[:,"sp"] = df.algodata['sp'].astype(float)
+
 
 
 df.algodata.loc[:,"RANK_"] = df.algodata.groupby( ['RaceId'] )['BSP_WIN'].rank("dense", ascending=True)
@@ -816,6 +811,42 @@ df.algodata.loc[:,'flag_top3'] = df.algodata.apply(lambda x : np.nan if pd.isna(
 df.algodata.loc[:,"flag_top3"] = df.algodata["flag_top3"].astype(bool)
 
 
+df.algodata.loc[:,"flag_expfav"] = df.algodata.apply(lambda x : np.nan if pd.isna(x.RANK_) else True if x.RANK_ <= 1 else False, axis = 1)
+df.algodata.loc[:,"flag_expfav"] = df.algodata["flag_expfav"].astype(bool)
+
+df.algodata.loc[:,"flag_expsec"] = df.algodata.apply(lambda x : np.nan if pd.isna(x.RANK_) else True if x.RANK_ == 2 else False, axis = 1)
+df.algodata.loc[:,"flag_expsec"] = df.algodata["flag_expsec"].astype(bool)
+
+df.algodata.loc[:,"flag_expthi"] = df.algodata.apply(lambda x : np.nan if pd.isna(x.RANK_) else True if x.RANK_ == 3 else False, axis = 1)
+df.algodata.loc[:,"flag_expthi"] = df.algodata["flag_expthi"].astype(bool)
+
+df.algodata.loc[:,"flag_expfou"] = df.algodata.apply(lambda x : np.nan if pd.isna(x.RANK_) else True if x.RANK_ == 4 else False, axis = 1)
+df.algodata.loc[:,"flag_expfou"] = df.algodata["flag_expfou"].astype(bool)
+
+df.algodata.loc[:,"flag_expfif"] = df.algodata.apply(lambda x : np.nan if pd.isna(x.RANK_) else True if x.RANK_ == 5 else False, axis = 1)
+df.algodata.loc[:,"flag_expfif"] = df.algodata["flag_expfif"].astype(bool)
+
+df.algodata.loc[:,"flag_expsix"] = df.algodata.apply(lambda x : np.nan if pd.isna(x.RANK_) else True if x.RANK_ == 6 else False, axis = 1)
+df.algodata.loc[:,"flag_expsix"] = df.algodata["flag_expsix"].astype(bool)
+
+df.algodata.loc[:,"flag_expsev"] = df.algodata.apply(lambda x : np.nan if pd.isna(x.RANK_) else True if x.RANK_ == 7 else False, axis = 1)
+df.algodata.loc[:,"flag_expsev"] = df.algodata["flag_expsev"].astype(bool)
+
+df.algodata.loc[:,"flag_expeig"] = df.algodata.apply(lambda x : np.nan if pd.isna(x.RANK_) else True if x.RANK_ == 8 else False, axis = 1)
+df.algodata.loc[:,"flag_expeig"] = df.algodata["flag_expeig"].astype(bool)
+
+
+# Actuals
+
+if DEBUG: print(df.algodata.Place.value_counts())
+
+df.algodata['Place'] = df.algodata['Place'].astype(str)
+df.algodata.loc[:,"pos"] = df.algodata.apply( lambda x: x['Place'].replace('=',''), axis = 1 )
+
+if DEBUG: print(df.algodata.pos.value_counts(dropna = False))
+
+
+df.algodata.loc[:,"pos"] = df.algodata["pos"].astype(int)
 
 df.algodata.loc[:,'flag_win'] = df.algodata.apply(lambda x : np.nan if pd.isna(x.pos) else True if x.pos <= 1 else False, axis = 1)
 df.algodata.loc[:,'flag_win'] = df.algodata['flag_win'].astype(bool)
@@ -839,14 +870,30 @@ s1 - Strategy 1 (Favourite based strategies)
         3 fav to win under/over 2.5
         4 fav to win under/over 3.0
 
-    2 Fav to Place
+    21 Fav to Win
+    22 Sec Fav to Win
+    23 Thi Fav to Win
+    24 Fou Fav to Win
+    25 Fif Fav to Win
+    26 Six Fav to Win
+    27 Sev Fav to Win
+    28 Eig Fav to Win
+    
 
 s2 - Strategy 2 ( Top 3 Based Strategies )
     1 All top 3 to place 
     2 Any of the top 3 to win 
         bet on top 2 to win
         bet on top 3 to win, is that 
-    3 Favourite to Place
+    31 Favourite to Place
+    32 Sec Fav to Place
+    33 Thi Fav to Place
+    34 Fourth Fav to Place
+    35 Fif Fav to Place
+    36 Six Fav to Place 
+    37 Sev Fav to Place
+    38 Eigh Fav to Place
+    
 
 '''
 
@@ -858,9 +905,27 @@ df.algodata.loc[:,"s1_12"] = ( df.algodata.flag_top1 ) & ( df.algodata.sp <= 2.0
 df.algodata.loc[:,"s1_13"] = ( df.algodata.flag_top1 ) & ( df.algodata.sp <= 2.5)
 df.algodata.loc[:,"s1_14"] = ( df.algodata.flag_top1 ) & ( df.algodata.sp <= 3.0)
 
+df.algodata.loc[:,"s1_21"] = ( df.algodata.flag_expfav )
+df.algodata.loc[:,"s1_22"] = ( df.algodata.flag_expsec )
+df.algodata.loc[:,"s1_23"] = ( df.algodata.flag_expthi )
+df.algodata.loc[:,"s1_24"] = ( df.algodata.flag_expfou )
+df.algodata.loc[:,"s1_25"] = ( df.algodata.flag_expfif )
+df.algodata.loc[:,"s1_26"] = ( df.algodata.flag_expsix )
+df.algodata.loc[:,"s1_27"] = ( df.algodata.flag_expsev )
+df.algodata.loc[:,"s1_28"] = ( df.algodata.flag_expeig )
+
 
 df.algodata.loc[:,"s2_1"] = ( df.algodata.flag_top3 )
-df.algodata.loc[:,"s2_3"] = ( df.algodata.flag_fav )
+#df.algodata.loc[:,"s2_2"] = ( df.algodata.flag_fav )
+
+df.algodata.loc[:,"s2_31"] = ( df.algodata.flag_expfav )
+df.algodata.loc[:,"s2_32"] = ( df.algodata.flag_expsec )
+df.algodata.loc[:,"s2_33"] = ( df.algodata.flag_expthi )
+df.algodata.loc[:,"s2_34"] = ( df.algodata.flag_expfou )
+df.algodata.loc[:,"s2_35"] = ( df.algodata.flag_expfif )
+df.algodata.loc[:,"s2_36"] = ( df.algodata.flag_expsix )
+df.algodata.loc[:,"s2_37"] = ( df.algodata.flag_expsev )
+df.algodata.loc[:,"s2_38"] = ( df.algodata.flag_expeig )
 
 dty = df.algodata.dtypes
 
@@ -894,10 +959,13 @@ print(df.algodata.shape)
 
 algo_head = df.algodata.head()
 
-strategies_1 = ['1_1', '1_11', '1_12', '1_13']
-strategies_2 = ['2_1', '2_3']
+
+strategies_1 = ['1_1', '1_11', '1_12', '1_13', '1_21', '1_22', '1_23', '1_24', '1_25', '1_26', '1_27', '1_28']
+strategies_2 = ['2_1', '2_31', '2_32', '2_33', '2_34', '2_35', '2_36', '2_37', '2_38' ]
+
 
 finalres = pd.DataFrame( columns = ['strategy','races','bets','profit','profitability'] )
+
 
 for strat in strategies_1:
     df.algodata.loc[:,'p'+ strat] = df.algodata.apply(lambda x : x.BSP_WIN - 1 if ( x['s'+strat] == x['flag_win'] ) & (x['s'+strat])\
@@ -956,8 +1024,12 @@ algo_sample.groupby(['Month','Day']).agg({'p2_3':'sum', 's2_1':'sum'}).plot(kind
 algo_sample.groupby(['Month','Day']).agg({'p2_3':'sum', 's2_1':'sum'}).plot(kind = 'bar')
 
 
-df.algodata.groupby(['Track']).agg({'p2_3':'sum', 's2_1':'sum'}).plot(kind = 'bar')
+df.algodata.groupby(['Track']).agg({'p2_31':'sum', 's1_1':'sum'}).plot(kind = 'bar')
 
+df.algodata.groupby(['Track']).agg({'p2_32':'sum', 's1_1':'sum'}).plot(kind = 'bar')
+df.algodata.groupby(['Track']).agg({'p2_33':'sum', 's1_1':'sum'}).plot(kind = 'bar')
+
+df.algodata.groupby(['Track']).agg({'p1_11':'sum', 's1_1':'sum'}).plot(kind = 'bar')
 
 #----------------------------------------------------------------- Stability  -----------------------------------------------------------------
 

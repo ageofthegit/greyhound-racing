@@ -56,11 +56,13 @@ import fasttrack as ft
 
  
 #df.races_live = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Live\\races_today_20220531_132pm.csv')
-df.races_live = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Live\\races_today_live_2022_06_01_07_36.csv')
+#df.races_live = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Live\\races_today_live_2022_06_01_07_36.csv')
+df.races_live = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Live\\races_today_live_2022_06_02_07_07.csv')
 summ.races_live = hd.describe_df(df.races_live)
 
 #df.dogs_live = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Live\\dogs_today_20220531_132pm.csv')
-df.dogs_live = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Live\\dogs_today_live_2022_06_01_07_36.csv')
+#df.dogs_live = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Live\\dogs_today_live_2022_06_01_07_36.csv')
+df.dogs_live = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Live\\dogs_today_live_2022_06_02_07_07.csv')
 summ.dogs_live = hd.describe_df(df.dogs_live)
 
 df.live_merge = pd.merge( df.dogs_live, df.races_live, left_on = 'RaceId', right_on = '@id', how = 'left' )
@@ -72,12 +74,14 @@ summ.live_merge = hd.describe_df(df.live_merge)
 
 #df.races_past = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\race_details_20220531.csv')
 #df.races_past = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\race_details_20220531.csv')
-df.races_past = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\race_details_20220601.csv')
+#df.races_past = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\race_details_20220601.csv')
+df.races_past = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\race_details_20220602.csv')
 summ.races_past = hd.describe_df(df.races_past)
 
 #df.dogs_past = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\dog_results_20220531.csv')
 #df.dogs_past = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\dog_results_20220531.csv')
-df.dogs_past = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\dog_results_20220601.csv')
+#df.dogs_past = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\dog_results_20220601.csv')
+df.dogs_past = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\dog_results_20220602.csv')
 summ.dogs_past = hd.describe_df(df.dogs_past)
 
 df.past_merge = pd.merge( df.dogs_past, df.races_past, left_on = 'RaceId', right_on = '@id', how = 'left' )
@@ -130,6 +134,7 @@ info = pd.merge(info_miss, info_tota, on = grouping , how = 'left')
 print(df.main_merge.shape)
 
 '''
+01 June 07 37 Am
 
              Track_LIVE  MissingOdds  Odds
 0           Albion Park          109     0
@@ -146,6 +151,26 @@ print(df.main_merge.shape)
 11                Taree          105     0
 12            Traralgon            0   105
 13       Wentworth Park           68     0
+
+
+02 June 07 07 Am
+
+           Track_LIVE  MissingOdds  Odds
+0         Albion Park           94     0
+1          Angle Park           76     0
+2              Casino          112     0
+3   Christchurch (NZ)          120     0
+4               Dapto           78     0
+5              Gawler            2     0
+6            Gunnedah          116     0
+7              Hobart           97     0
+8             Horsham            0    78
+9            Mandurah          114     0
+10      Mount Gambier          111     0
+11       Sandown Park            0    81
+12         Shepparton            0    98
+13       Waikato (NZ)           91     0
+14           Warragul            0    93
 
 '''
 
@@ -170,28 +195,67 @@ df.main_df.loc[:,"NumPlace"] = df.main_df.apply(lambda x : None if pd.isna(x.Pla
 
 summ.main_merge = hd.describe_df(df.main_df)
 
+
+
 #----------------------------------------------------------------- PROFITABILITY VARIABLES -----------------------------------------------------------------
+
+# Expected
 
 df.main_df.loc[:,'flag_exptop3'] = df.main_df.apply(lambda x : np.nan if pd.isna(x.ExpPos) else True if x.ExpPos <= 3 else False, axis = 1)
 df.main_df["flag_exptop3"] = df.main_df["flag_exptop3"].astype(bool)
 
+df.main_df.loc[:,'flag_expfav'] = df.main_df.apply(lambda x : np.nan if pd.isna(x.ExpPos) else True if x.ExpPos <= 1 else False, axis = 1)
+df.main_df["flag_expfav"] = df.main_df["flag_expfav"].astype(bool)
+
+df.main_df.loc[:,'flag_expsecfav'] = df.main_df.apply(lambda x : np.nan if pd.isna(x.ExpPos) else True if x.ExpPos == 2 else False, axis = 1)
+df.main_df["flag_expsecfav"] = df.main_df["flag_expsecfav"].astype(bool)
+
+df.main_df.loc[:,'flag_expthifav'] = df.main_df.apply(lambda x : np.nan if pd.isna(x.ExpPos) else True if x.ExpPos == 3 else False, axis = 1)
+df.main_df["flag_expthifav"] = df.main_df["flag_expthifav"].astype(bool)
+
+df.main_df.loc[:,'flag_expfoufav'] = df.main_df.apply(lambda x : np.nan if pd.isna(x.ExpPos) else True if x.ExpPos == 4 else False, axis = 1)
+df.main_df["flag_expfoufav"] = df.main_df["flag_expfoufav"].astype(bool)
+
+df.main_df.loc[:,'flag_expfoufav'] = df.main_df.apply(lambda x : np.nan if pd.isna(x.ExpPos) else True if x.ExpPos == 4 else False, axis = 1)
+df.main_df["flag_expfoufav"] = df.main_df["flag_expfoufav"].astype(bool)
+
+df.main_df.loc[:,'flag_expfiffav'] = df.main_df.apply(lambda x : np.nan if pd.isna(x.ExpPos) else True if x.ExpPos == 5 else False, axis = 1)
+df.main_df["flag_expfiffav"] = df.main_df["flag_expfiffav"].astype(bool)
+
+df.main_df.loc[:,'flag_expsixfav'] = df.main_df.apply(lambda x : np.nan if pd.isna(x.ExpPos) else True if x.ExpPos == 6 else False, axis = 1)
+df.main_df["flag_expsixfav"] = df.main_df["flag_expsixfav"].astype(bool)
+
+# Actuals
 
 df.main_df.loc[:,"flag_plc"] = df.main_df.apply(lambda x : np.nan if pd.isna(x.NumPlace) else True if x.NumPlace <= 3 else False, axis = 1)
 df.main_df["flag_plc"] = df.main_df["flag_plc"].astype(bool)
 
+df.main_df.loc[:,"flag_win"] = df.main_df.apply(lambda x : np.nan if pd.isna(x.NumPlace) else True if x.NumPlace <= 1 else False, axis = 1)
+df.main_df["flag_win"] = df.main_df["flag_win"].astype(bool)
 
-df.main_df.loc[:,"s2_1"] = ( df.main_df.flag_exptop3 )
+
+# Add as strategy Numbers
+
+#df.main_df.loc[:,"s2_1"] = ( df.main_df.flag_exptop3 ) # Don't Have Place Prices - Need to convert the Win Odds to Place Odds
+
+df.main_df.loc[:,"s2_3"] = ( df.main_df.flag_expfav )
+df.main_df.loc[:,"s2_32"] = ( df.main_df.flag_expsecfav )
+df.main_df.loc[:,"s2_33"] = ( df.main_df.flag_expthifav )
+df.main_df.loc[:,"s2_34"] = ( df.main_df.flag_expfoufav )
+df.main_df.loc[:,"s2_35"] = ( df.main_df.flag_expfiffav )
+df.main_df.loc[:,"s2_36"] = ( df.main_df.flag_expsixfav )
 
 
 #----------------------------------------------------------------- PROFITABILITY -----------------------------------------------------------------
 
-strategies_2 = ['2_1']
+#strategies_2 = [ '2_1' , '2_3', '2_32', '2_33', '2_34']
+strategies_2 = [ '2_3', '2_32', '2_33', '2_34', '2_35', '2_36']
 
 finalres = pd.DataFrame( columns = ['strategy','races','bets','profit','profitability'] )
 
 for strat in strategies_2:
-    df.main_df.loc[:,'p'+ strat] = df.main_df.apply(lambda x : x.NumOdds - 1 if ( x['s'+strat] == x['flag_plc'] ) & (x['s'+strat])\
-                                        else -1 if ~( x['s'+strat] == x['flag_plc'] ) & (x['s'+strat]) \
+    df.main_df.loc[:,'p'+ strat] = df.main_df.apply(lambda x : x.NumOdds - 1 if ( x['s'+strat] == x['flag_win'] ) & (x['s'+strat])\
+                                        else -1 if ~( x['s'+strat] == x['flag_win'] ) & (x['s'+strat]) \
                                             else 0
                                     , axis=1)
 

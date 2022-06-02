@@ -75,7 +75,7 @@ print(len(tracks_filter))
 
 filename_suffix = datetime.today().strftime('%Y_%m_%d_%H_%M')
 
-races_today, dogs_today = greys.getFullFormat('2022-06-02', tracks = tracks_filter)
+races_today, dogs_today = greys.getFullFormat('2022-06-03', tracks = tracks_filter)
 
 print(filename_suffix)
 
