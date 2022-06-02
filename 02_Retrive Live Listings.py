@@ -1,5 +1,6 @@
 
 # -*- coding: utf-8 -*-
+
 """
 Spyder Editor
 
@@ -7,6 +8,7 @@ This is a temporary script file.
 """
 
 """
+
 OUTLINES
     a) Outline is to retrieve live listings
 
@@ -18,7 +20,6 @@ DETAILS
 NEXT STEPS    
     - Either get rid of races with missing values
     - Change the names of the Track to what they ought to be, and then do another merge
-
 
 """
 
@@ -72,10 +73,12 @@ print(len(tracks_filter))
 
 #races_today, dogs_today = greys.getBasicFormat('2022-06-01', tracks_filter)
 
-races_today, dogs_today = greys.getFullFormat('2022-06-01', tracks = tracks_filter)
-
-
 filename_suffix = datetime.today().strftime('%Y_%m_%d_%H_%M')
+
+races_today, dogs_today = greys.getFullFormat('2022-06-02', tracks = tracks_filter)
+
+print(filename_suffix)
+
 races_today.to_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Live\\races_today_live_{filename_suffix}.csv', index = False)
 dogs_today.to_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Live\\dogs_today_live_{filename_suffix}.csv', index = False)
 

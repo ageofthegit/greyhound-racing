@@ -438,8 +438,8 @@ Place
 
 # Importing Dog Race Results
 
-#res_raw = pd.read_csv('C:\\Users\\karan\\Documents\\Data\\racing\\dog_results_20211201_20211231.csv')
-df.res_raw = pd.read_csv('C:\\Users\\karan\\Documents\\Data\\racing\\dog_results_20220101_20220531.csv')
+#res_raw = pd.read_csv('C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\dog_results_20211201_20211231.csv')
+df.res_raw = pd.read_csv('C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\dog_results_20220101_20220531.csv')
 
 df.res_raw.loc[:,"DogName"] = df.res_raw["DogName"].str.replace("'","").str.replace(".","")
 if DEBUG: print(df.res_raw.shape) 
@@ -460,8 +460,8 @@ del df.res_raw, df.res_raw2
 
 
 # Importing Race Details 
-#race_raw = pd.read_csv('C:\\Users\\karan\\Documents\\Data\\racing\\race_details_20211201_20211231.csv', parse_dates = True)
-df.race_raw = pd.read_csv('C:\\Users\\karan\\Documents\\Data\\racing\\race_details_20220101_20220531.csv', parse_dates = True)
+#race_raw = pd.read_csv('C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\race_details_20211201_20211231.csv', parse_dates = True)
+df.race_raw = pd.read_csv('C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\race_details_20220101_20220531.csv', parse_dates = True)
 
 df.race_raw['Event_Dt'] = pd.to_datetime(df.race_raw['date']).dt.date
 
@@ -488,6 +488,7 @@ if DEBUG : print(df.race_raw.shape)
 
 df.race_ = df.race_raw[ ~df.race_raw.Track.str.contains('NZ')]
 
+
 if DEBUG : print(df.race_.shape)
 
 del df.race_raw
@@ -502,7 +503,7 @@ if DEBUG:
     print(df.race_.shape)
 
 df.ft = pd.merge(df.res_, df.race_, left_on = 'RaceId', right_on = '@id', how = 'inner', suffixes=('_DOG', '_RACE'))
-if DEBUG: print(df.ft.shape) 
+if DEBUG: print(df.ft.shape)
 
 # 2021
 # 333,285
@@ -589,7 +590,7 @@ print(df.final_box.shape)
 TRY : Merge Key -> ['Event_Dt','DogName', 'Track']
 '''
 
-print(df.bf.shape) 
+print(df.bf.shape)
 
 # 2021
 # 271,885
@@ -614,7 +615,7 @@ df.final_v3 = pd.merge( df.bf[ (df.bf['Event_Dt'] >= datetime.datetime.strptime(
                         , on = ['Event_Dt','DogName', 'Track'] , how = 'left')\
                             .sort_values(by = ['MENU_HINT','EVENT_NAME_WIN','SELECTION_NAME'])
 
-print(df.final_v3.shape) 
+print(df.final_v3.shape)
 
 # 2021
 # 22,696 - NO nxn Match
@@ -845,20 +846,21 @@ s2 - Strategy 2 ( Top 3 Based Strategies )
     2 Any of the top 3 to win 
         bet on top 2 to win
         bet on top 3 to win, is that 
+    3 Favourite to Place
 
 '''
 
 #res_.loc[:,"s1_1"] = res_.apply(lambda x : (x.flag_fav) & (x.flag_win), axis = 1 )
-df.algodata.loc[:,"s1_1"] = ( df.algodata.flag_fav )
+df.algodata.loc[:,"s1_1"] = ( df.algodata.flag_top1 )
 
-df.algodata.loc[:,"s1_11"] = ( df.algodata.flag_fav ) & ( df.algodata.sp <= 1.5)
-df.algodata.loc[:,"s1_12"] = ( df.algodata.flag_fav ) & ( df.algodata.sp <= 2.0)
-df.algodata.loc[:,"s1_13"] = ( df.algodata.flag_fav ) & ( df.algodata.sp <= 2.5)
-df.algodata.loc[:,"s1_14"] = ( df.algodata.flag_fav ) & ( df.algodata.sp <= 3.0)
+df.algodata.loc[:,"s1_11"] = ( df.algodata.flag_top1 ) & ( df.algodata.sp <= 1.5)
+df.algodata.loc[:,"s1_12"] = ( df.algodata.flag_top1 ) & ( df.algodata.sp <= 2.0)
+df.algodata.loc[:,"s1_13"] = ( df.algodata.flag_top1 ) & ( df.algodata.sp <= 2.5)
+df.algodata.loc[:,"s1_14"] = ( df.algodata.flag_top1 ) & ( df.algodata.sp <= 3.0)
 
 
 df.algodata.loc[:,"s2_1"] = ( df.algodata.flag_top3 )
-
+df.algodata.loc[:,"s2_3"] = ( df.algodata.flag_fav )
 
 dty = df.algodata.dtypes
 
@@ -879,10 +881,23 @@ Evaluation Metrics
 
 #strat = '1_1'
 
-strategies_1 = ['1_1', '1_11', '1_12', '1_13']
-strategies_2 = ['2_1']
 
-finalres = pd.DataFrame( columns = ['strategy','races','profit','profitability'] )
+print(df.algodata.columns.values.tolist())
+
+print(len(df.algodata.EVENT_ID_WIN.unique()))
+print(len(df.algodata.MENU_HINT.unique()))
+
+print(len(df.algodata.EVENT_ID_PLC.unique()))
+
+print(df.algodata.shape)
+
+
+algo_head = df.algodata.head()
+
+strategies_1 = ['1_1', '1_11', '1_12', '1_13']
+strategies_2 = ['2_1', '2_3']
+
+finalres = pd.DataFrame( columns = ['strategy','races','bets','profit','profitability'] )
 
 for strat in strategies_1:
     df.algodata.loc[:,'p'+ strat] = df.algodata.apply(lambda x : x.BSP_WIN - 1 if ( x['s'+strat] == x['flag_win'] ) & (x['s'+strat])\
@@ -891,11 +906,12 @@ for strat in strategies_1:
                                     , axis=1)
 
     # Adding the Necessary cols
-    races = df.algodata['s'+strat].sum()
+    races = len(df.algodata.EVENT_ID_WIN.unique())
+    bets = df.algodata['s'+strat].sum()
     profit = df.algodata['p'+strat].sum()
-    profitability = round(float(profit/ races)*100,1)
+    profitability = round(float(profit/ bets)*100,1)
     
-    row_input = [strat, races, profit, str(profitability) + '%' ]
+    row_input = [strat, races, bets, profit, str(profitability) + '%' ]
     
     finalres.loc[len(finalres)] = row_input
     
@@ -907,14 +923,16 @@ for strat in strategies_2:
                                     , axis=1)
 
     # Adding the Necessary cols
-    races = df.algodata['s'+strat].sum()
+    races = len(df.algodata.EVENT_ID_WIN.unique())
+    bets = df.algodata['s'+strat].sum()
     profit = df.algodata['p'+strat].sum()
-    profitability = round(float(profit/ races)*100,1)
+    profitability = round(float(profit/ bets)*100,1)
     
-    row_input = [strat, races, profit, str(profitability) + '%' ]
+    row_input = [strat, races, bets, profit, str(profitability) + '%' ]
     
     finalres.loc[len(finalres)] = row_input
     
+
 
 #----------------------------------------------------------------- Quality Checking Strategies  -----------------------------------------------------------------
 
@@ -923,18 +941,22 @@ print(df.algodata.columns.values)
 
 print(df.algodata.Month.value_counts())
 
-algo_sample = df.algodata[ df.algodata.Month.isin(['02']) ] 
+algo_sample = df.algodata[ df.algodata.Month.isin(['02']) ]
 
 
 #----------------------------------------------------------------- Stability  -----------------------------------------------------------------
 
 
-algo_sample.groupby('EVENT_DT_FIX').agg({'p2_1':'sum'}).plot()
+print(df.algodata.columns.values.tolist())
 
-algo_sample.groupby(['Month','Day']).agg({'p2_1':'sum', 's2_1':'sum'}).plot(kind = 'bar')
+algo_sample.groupby('EVENT_DT_FIX').agg({'p2_3':'sum'}).plot()
+
+algo_sample.groupby(['Month','Day']).agg({'p2_3':'sum', 's2_1':'sum'}).plot(kind = 'bar')
+
+algo_sample.groupby(['Month','Day']).agg({'p2_3':'sum', 's2_1':'sum'}).plot(kind = 'bar')
 
 
-df.algodata.groupby(['Month']).agg({'p2_1':'sum', 's2_1':'sum'}).plot(kind = 'bar')
+df.algodata.groupby(['Track']).agg({'p2_3':'sum', 's2_1':'sum'}).plot(kind = 'bar')
 
 
 #----------------------------------------------------------------- Stability  -----------------------------------------------------------------

@@ -31,7 +31,6 @@ greys = ft.Fasttrack(fasttrack_key)
 
 #----------------------------------------------------------------- DOWNLOAD PAST LISTINGS -----------------------------------------------------------------
 
-
 track_codes = greys.listTracks()
 print(track_codes.head())
 
@@ -44,9 +43,8 @@ tracks_filter = list(track_codes['track_code'])
 print(len(tracks_filter)) # 113
 
 
-race_details, dog_results = greys.getRaceResults('2022-05-31', '2022-05-31', tracks_filter)
-#race_details, dog_results = greys.getRaceResults('2018-01-01', '2021-06-15')
-
+#race_details, dog_results = greys.getRaceResults('2022-05-31', '2022-05-31', tracks_filter)
+race_details, dog_results = greys.getRaceResults('2022-06-01', '2022-06-01', tracks_filter)
 
 print(type(race_details))
 print(type(dog_results))
@@ -58,9 +56,12 @@ print(race_details.shape)
 print(dog_results.shape)
 
 
-race_details.to_csv( "C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\race_details_20220531.csv" , index = False)
-dog_results.to_csv( "C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\dog_results_20220531.csv" , index = False)
 
+#race_details.to_csv( "C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\race_details_20220531.csv" , index = False)
+#dog_results.to_csv( "C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\dog_results_20220531.csv" , index = False)
+
+race_details.to_csv( "C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\race_details_20220601.csv" , index = False)
+dog_results.to_csv( "C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\dog_results_20220601.csv" , index = False)
 
 
 #----------------------------------------------------------------- IMPORT PAST LISTINGS -----------------------------------------------------------------

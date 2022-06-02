@@ -54,13 +54,14 @@ import fasttrack as ft
 
 #----------------------------------------------------------------- IMPORT LIVE LISTINGS -----------------------------------------------------------------
 
-
-df.races_live = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Live\\races_today_20220531_132pm.csv')
+ 
+#df.races_live = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Live\\races_today_20220531_132pm.csv')
+df.races_live = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Live\\races_today_live_2022_06_01_07_36.csv')
 summ.races_live = hd.describe_df(df.races_live)
 
-df.dogs_live = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Live\\dogs_today_20220531_132pm.csv')
+#df.dogs_live = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Live\\dogs_today_20220531_132pm.csv')
+df.dogs_live = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Live\\dogs_today_live_2022_06_01_07_36.csv')
 summ.dogs_live = hd.describe_df(df.dogs_live)
-
 
 df.live_merge = pd.merge( df.dogs_live, df.races_live, left_on = 'RaceId', right_on = '@id', how = 'left' )
 summ.live_merge = hd.describe_df(df.live_merge)
@@ -69,10 +70,14 @@ summ.live_merge = hd.describe_df(df.live_merge)
 #----------------------------------------------------------------- IMPORT PAST LISTINGS -----------------------------------------------------------------
 
 
-df.races_past = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\race_details_20220531.csv')
+#df.races_past = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\race_details_20220531.csv')
+#df.races_past = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\race_details_20220531.csv')
+df.races_past = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\race_details_20220601.csv')
 summ.races_past = hd.describe_df(df.races_past)
 
-df.dogs_past = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\dog_results_20220531.csv')
+#df.dogs_past = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\dog_results_20220531.csv')
+#df.dogs_past = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\dog_results_20220531.csv')
+df.dogs_past = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\dog_results_20220601.csv')
 summ.dogs_past = hd.describe_df(df.dogs_past)
 
 df.past_merge = pd.merge( df.dogs_past, df.races_past, left_on = 'RaceId', right_on = '@id', how = 'left' )
@@ -84,9 +89,7 @@ summ.past_merge = hd.describe_df(df.past_merge)
 df.live_merge_top = df.live_merge.head(100)
 df.past_merge_top = df.past_merge.head(100)
 
-
 print(df.live_merge.columns.values.tolist())
-
 print(df.past_merge.columns.values.tolist())
 
 
@@ -95,7 +98,7 @@ df.main_merge = pd.merge(
     df.past_merge[['Place','DogName','Box','RaceId','TrainerId','RaceNum','RaceName','RaceTime','Distance','RaceGrade','Track','date']],
     on = ['DogName','RaceId','RaceName'],
     how = 'left' ,
-    suffixes = ['LIVE_','PAST_']
+    suffixes = ['_LIVE','_PAST']
     )
 
 summ.main_merge = hd.describe_df(df.main_merge)
@@ -109,6 +112,42 @@ df.main_df = df.main_merge[ ~df.main_merge.RaceId.isin(raceids_w_missingodds) ]
 
 print( len(df.main_merge.RaceId.unique()) )
 print( len(df.main_df.RaceId.unique()) )
+
+
+
+# UNDERSTAND MISSING DATA #
+#df.main_merge.groupby()
+
+print(df.main_merge.columns.values.tolist())
+
+#grouping = ['RaceTime_LIVE']
+grouping = ['Track_LIVE']
+
+info_miss = df.main_merge.groupby( grouping )['Odds'].apply(lambda x: x.isnull().sum()).reset_index().rename( columns = {'Odds':'MissingOdds'} )
+info_tota = df.main_merge.groupby( grouping ).agg( {'Odds':'count'} ).reset_index()
+info = pd.merge(info_miss, info_tota, on = grouping , how = 'left')
+
+print(df.main_merge.shape)
+
+'''
+
+             Track_LIVE  MissingOdds  Odds
+0           Albion Park          109     0
+1              Ballarat            0    94
+2               Bendigo            0   100
+3            Cannington          104     0
+4              Capalaba           81     0
+5                Darwin           60     0
+6                Gawler          101     0
+7         Meadows (MEP)            0    84
+8   Palmerston Nth (NZ)           70     0
+9              Richmond          109     0
+10          Rockhampton           78     0
+11                Taree          105     0
+12            Traralgon            0   105
+13       Wentworth Park           68     0
+
+'''
 
 
 #----------------------------------------------------------------- STRATEGY VARIABLES -----------------------------------------------------------------
@@ -134,12 +173,11 @@ summ.main_merge = hd.describe_df(df.main_df)
 #----------------------------------------------------------------- PROFITABILITY VARIABLES -----------------------------------------------------------------
 
 df.main_df.loc[:,'flag_exptop3'] = df.main_df.apply(lambda x : np.nan if pd.isna(x.ExpPos) else True if x.ExpPos <= 3 else False, axis = 1)
-df.main_df.loc[:,"flag_exptop3"] = df.main_df["flag_top3"].astype(bool)
+df.main_df["flag_exptop3"] = df.main_df["flag_exptop3"].astype(bool)
 
 
 df.main_df.loc[:,"flag_plc"] = df.main_df.apply(lambda x : np.nan if pd.isna(x.NumPlace) else True if x.NumPlace <= 3 else False, axis = 1)
-df.main_df.loc[:,"flag_plc"] = df.main_df["flag_plc"].astype(bool)
-
+df.main_df["flag_plc"] = df.main_df["flag_plc"].astype(bool)
 
 
 df.main_df.loc[:,"s2_1"] = ( df.main_df.flag_exptop3 )
