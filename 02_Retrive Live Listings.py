@@ -57,11 +57,20 @@ from betfairlightweight import filters
 import fasttrack as ft
 
 
-fasttrack_key = "dcc0a791-6b18-4cc4-8d46-453a00e9b7e4"
+#----------------------------------------------------------------- HELPFUL FUNCTIONS -----------------------------------------------------------------
+
+
+#----------------------------------------------------------------- ENVIRONMENT VARIABLES FOR ACCESS -----------------------------------------------------------------
+
+import os
+
+#FUTURES_API_KEY = os.environ.get('FUTURES_API_KEY')
+FASTTRACK_KEY = os.environ.get('FASTTRACK_KEY')
+
 
 #----------------------------------------------------------------- RETRIEVE LIVE LISTINGS -----------------------------------------------------------------
 
-greys = ft.Fasttrack(fasttrack_key)
+greys = ft.Fasttrack(FASTTRACK_KEY)
 
 track_codes = greys.listTracks()
 track_codes.head()
@@ -75,12 +84,18 @@ print(len(tracks_filter))
 
 filename_suffix = datetime.today().strftime('%Y_%m_%d_%H_%M')
 
-races_today, dogs_today = greys.getFullFormat('2022-06-03', tracks = tracks_filter)
+df.ft_races_today, df.ft_dogs_today = greys.getFullFormat('2022-06-06', tracks = tracks_filter)
+
+
+print(df.ft_races_today.columns.values.tolist())
+
+df.ft_races_today.loc[:,'racetime_fix'] = pd.to_datetime(df.ft_races_today['RaceTime'], format='%I:%M%p').dt.strftime('%H:%M:%S')
+
 
 print(filename_suffix)
 
-races_today.to_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Live\\races_today_live_{filename_suffix}.csv', index = False)
-dogs_today.to_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Live\\dogs_today_live_{filename_suffix}.csv', index = False)
+df.ft_races_today.to_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Live\\ft_races_today_live_{filename_suffix}.csv', index = False)
+df.ft_dogs_today.to_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Live\\ft_dogs_today_live_{filename_suffix}.csv', index = False)
 
 #Test tomorrow if the price from fastrack was good enought for profits
 

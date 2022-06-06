@@ -105,17 +105,33 @@ df.main_merge = pd.merge(
     suffixes = ['_LIVE','_PAST']
     )
 
+
 summ.main_merge = hd.describe_df(df.main_merge)
+
 
 
 # Find RaceIds with No Odds
 raceids_w_missingodds = df.main_merge[ ( df.main_merge.Odds.isna() ) ]['RaceId'].unique()
 print(len(raceids_w_missingodds))
 
-df.main_df = df.main_merge[ ~df.main_merge.RaceId.isin(raceids_w_missingodds) ]
+df.main_test_final = df.main_merge[ ~df.main_merge.RaceId.isin(raceids_w_missingodds) ]
+
+print( len(df.main_merge.Track_LIVE.unique()) )
+# 15 races
+print( len(df.main_test_final.Track_LIVE.unique()) )
+# 4 races
+
+
+print( df.main_test_final.Track_LIVE.unique() )
+''' ['Sandown Park' 'Warragul' 'Shepparton' 'Horsham'] '''
+
 
 print( len(df.main_merge.RaceId.unique()) )
-print( len(df.main_df.RaceId.unique()) )
+# 160 races
+print( len(df.main_test_final.RaceId.unique()) )
+# 47 races
+
+
 
 
 
@@ -177,92 +193,92 @@ print(df.main_merge.shape)
 
 #----------------------------------------------------------------- STRATEGY VARIABLES -----------------------------------------------------------------
 
-print(df.main_df.columns.values.tolist())
+print(df.main_test_final.columns.values.tolist())
 
-print(df.main_df.Place.value_counts())
+print(df.main_test_final.Place.value_counts())
 
-df.main_df.sort_values(by = ['RaceId', 'NumOdds'], inplace = True)
+df.main_test_final.sort_values(by = ['RaceId', 'NumOdds'], inplace = True)
 
-df.main_df.loc[:,"NumOdds"] = df.main_df.apply(lambda x : None if pd.isna(x.Odds) else x['Odds'].replace('$','') , axis = 1)
-df.main_df["NumOdds"] = df.main_df["NumOdds"].astype(float)
+df.main_test_final.loc[:,"NumOdds"] = df.main_test_final.apply(lambda x : None if pd.isna(x.Odds) else x['Odds'].replace('$','') , axis = 1)
+df.main_test_final["NumOdds"] = df.main_test_final["NumOdds"].astype(float)
 
-df.main_df.loc[:,"ExpPos"] = df.main_df.groupby( ['RaceId'] )['NumOdds'].rank("dense", ascending=True)
+df.main_test_final.loc[:,"ExpPos"] = df.main_test_final.groupby( ['RaceId'] )['NumOdds'].rank("dense", ascending=True)
 
-#df.main_df.loc[:,"NumPlace"] = df.main_df["Place"].astype(int)
-df.main_df.loc[:,"PlaceInterim"] = df.main_df.apply(lambda x : None if pd.isna(x.Place) else x['Place'].replace('=','') , axis = 1)
+#df.main_test_final.loc[:,"NumPlace"] = df.main_test_final["Place"].astype(int)
+df.main_test_final.loc[:,"PlaceInterim"] = df.main_test_final.apply(lambda x : None if pd.isna(x.Place) else x['Place'].replace('=','') , axis = 1)
 
-df.main_df.loc[:,"NumPlace"] = df.main_df.apply(lambda x : None if pd.isna(x.PlaceInterim) else 10 if x.PlaceInterim in ['S','T','F'] else int(x.PlaceInterim), axis = 1)
+df.main_test_final.loc[:,"NumPlace"] = df.main_test_final.apply(lambda x : None if pd.isna(x.PlaceInterim) else 10 if x.PlaceInterim in ['S','T','F'] else int(x.PlaceInterim), axis = 1)
 
-summ.main_merge = hd.describe_df(df.main_df)
+summ.main_test_final = hd.describe_df(df.main_test_final)
 
 
 
 #----------------------------------------------------------------- PROFITABILITY VARIABLES -----------------------------------------------------------------
 
 # Expected
+df.main_test_final.loc[:,'flag_exptop3'] = df.main_test_final.apply(lambda x : np.nan if pd.isna(x.ExpPos) else True if x.ExpPos <= 3 else False, axis = 1)
+df.main_test_final["flag_exptop3"] = df.main_test_final["flag_exptop3"].astype(bool)
 
-df.main_df.loc[:,'flag_exptop3'] = df.main_df.apply(lambda x : np.nan if pd.isna(x.ExpPos) else True if x.ExpPos <= 3 else False, axis = 1)
-df.main_df["flag_exptop3"] = df.main_df["flag_exptop3"].astype(bool)
 
-df.main_df.loc[:,'flag_expfav'] = df.main_df.apply(lambda x : np.nan if pd.isna(x.ExpPos) else True if x.ExpPos <= 1 else False, axis = 1)
-df.main_df["flag_expfav"] = df.main_df["flag_expfav"].astype(bool)
 
-df.main_df.loc[:,'flag_expsecfav'] = df.main_df.apply(lambda x : np.nan if pd.isna(x.ExpPos) else True if x.ExpPos == 2 else False, axis = 1)
-df.main_df["flag_expsecfav"] = df.main_df["flag_expsecfav"].astype(bool)
+df.main_test_final.loc[:,'flag_expfav'] = df.main_test_final.apply(lambda x : np.nan if pd.isna(x.ExpPos) else True if x.ExpPos <= 1 else False, axis = 1)
+df.main_test_final["flag_expfav"] = df.main_test_final["flag_expfav"].astype(bool)
 
-df.main_df.loc[:,'flag_expthifav'] = df.main_df.apply(lambda x : np.nan if pd.isna(x.ExpPos) else True if x.ExpPos == 3 else False, axis = 1)
-df.main_df["flag_expthifav"] = df.main_df["flag_expthifav"].astype(bool)
+df.main_test_final.loc[:,'flag_expsecfav'] = df.main_test_final.apply(lambda x : np.nan if pd.isna(x.ExpPos) else True if x.ExpPos == 2 else False, axis = 1)
+df.main_test_final["flag_expsecfav"] = df.main_test_final["flag_expsecfav"].astype(bool)
 
-df.main_df.loc[:,'flag_expfoufav'] = df.main_df.apply(lambda x : np.nan if pd.isna(x.ExpPos) else True if x.ExpPos == 4 else False, axis = 1)
-df.main_df["flag_expfoufav"] = df.main_df["flag_expfoufav"].astype(bool)
+df.main_test_final.loc[:,'flag_expthifav'] = df.main_test_final.apply(lambda x : np.nan if pd.isna(x.ExpPos) else True if x.ExpPos == 3 else False, axis = 1)
+df.main_test_final["flag_expthifav"] = df.main_test_final["flag_expthifav"].astype(bool)
 
-df.main_df.loc[:,'flag_expfoufav'] = df.main_df.apply(lambda x : np.nan if pd.isna(x.ExpPos) else True if x.ExpPos == 4 else False, axis = 1)
-df.main_df["flag_expfoufav"] = df.main_df["flag_expfoufav"].astype(bool)
+df.main_test_final.loc[:,'flag_expfoufav'] = df.main_test_final.apply(lambda x : np.nan if pd.isna(x.ExpPos) else True if x.ExpPos == 4 else False, axis = 1)
+df.main_test_final["flag_expfoufav"] = df.main_test_final["flag_expfoufav"].astype(bool)
 
-df.main_df.loc[:,'flag_expfiffav'] = df.main_df.apply(lambda x : np.nan if pd.isna(x.ExpPos) else True if x.ExpPos == 5 else False, axis = 1)
-df.main_df["flag_expfiffav"] = df.main_df["flag_expfiffav"].astype(bool)
+df.main_test_final.loc[:,'flag_expfoufav'] = df.main_test_final.apply(lambda x : np.nan if pd.isna(x.ExpPos) else True if x.ExpPos == 4 else False, axis = 1)
+df.main_test_final["flag_expfoufav"] = df.main_test_final["flag_expfoufav"].astype(bool)
 
-df.main_df.loc[:,'flag_expsixfav'] = df.main_df.apply(lambda x : np.nan if pd.isna(x.ExpPos) else True if x.ExpPos == 6 else False, axis = 1)
-df.main_df["flag_expsixfav"] = df.main_df["flag_expsixfav"].astype(bool)
+df.main_test_final.loc[:,'flag_expfiffav'] = df.main_test_final.apply(lambda x : np.nan if pd.isna(x.ExpPos) else True if x.ExpPos == 5 else False, axis = 1)
+df.main_test_final["flag_expfiffav"] = df.main_test_final["flag_expfiffav"].astype(bool)
+
+df.main_test_final.loc[:,'flag_expsixfav'] = df.main_test_final.apply(lambda x : np.nan if pd.isna(x.ExpPos) else True if x.ExpPos == 6 else False, axis = 1)
+df.main_test_final["flag_expsixfav"] = df.main_test_final["flag_expsixfav"].astype(bool)
+
 
 # Actuals
+df.main_test_final.loc[:,"flag_plc"] = df.main_test_final.apply(lambda x : np.nan if pd.isna(x.NumPlace) else True if x.NumPlace <= 3 else False, axis = 1)
+df.main_test_final["flag_plc"] = df.main_test_final["flag_plc"].astype(bool)
 
-df.main_df.loc[:,"flag_plc"] = df.main_df.apply(lambda x : np.nan if pd.isna(x.NumPlace) else True if x.NumPlace <= 3 else False, axis = 1)
-df.main_df["flag_plc"] = df.main_df["flag_plc"].astype(bool)
-
-df.main_df.loc[:,"flag_win"] = df.main_df.apply(lambda x : np.nan if pd.isna(x.NumPlace) else True if x.NumPlace <= 1 else False, axis = 1)
-df.main_df["flag_win"] = df.main_df["flag_win"].astype(bool)
+df.main_test_final.loc[:,"flag_win"] = df.main_test_final.apply(lambda x : np.nan if pd.isna(x.NumPlace) else True if x.NumPlace <= 1 else False, axis = 1)
+df.main_test_final["flag_win"] = df.main_test_final["flag_win"].astype(bool)
 
 
 # Add as strategy Numbers
+#df.main_test_final.loc[:,"s2_1"] = ( df.main_test_final.flag_exptop3 ) # Don't Have Place Prices - Need to convert the Win Odds to Place Odds
 
-#df.main_df.loc[:,"s2_1"] = ( df.main_df.flag_exptop3 ) # Don't Have Place Prices - Need to convert the Win Odds to Place Odds
-
-df.main_df.loc[:,"s2_3"] = ( df.main_df.flag_expfav )
-df.main_df.loc[:,"s2_32"] = ( df.main_df.flag_expsecfav )
-df.main_df.loc[:,"s2_33"] = ( df.main_df.flag_expthifav )
-df.main_df.loc[:,"s2_34"] = ( df.main_df.flag_expfoufav )
-df.main_df.loc[:,"s2_35"] = ( df.main_df.flag_expfiffav )
-df.main_df.loc[:,"s2_36"] = ( df.main_df.flag_expsixfav )
+df.main_test_final.loc[:,"s2_31"] = ( df.main_test_final.flag_expfav )
+df.main_test_final.loc[:,"s2_32"] = ( df.main_test_final.flag_expsecfav )
+df.main_test_final.loc[:,"s2_33"] = ( df.main_test_final.flag_expthifav )
+df.main_test_final.loc[:,"s2_34"] = ( df.main_test_final.flag_expfoufav )
+df.main_test_final.loc[:,"s2_35"] = ( df.main_test_final.flag_expfiffav )
+df.main_test_final.loc[:,"s2_36"] = ( df.main_test_final.flag_expsixfav )
 
 
 #----------------------------------------------------------------- PROFITABILITY -----------------------------------------------------------------
 
 #strategies_2 = [ '2_1' , '2_3', '2_32', '2_33', '2_34']
-strategies_2 = [ '2_3', '2_32', '2_33', '2_34', '2_35', '2_36']
+strategies_2 = [ '2_31', '2_32', '2_33', '2_34', '2_35', '2_36']
 
 finalres = pd.DataFrame( columns = ['strategy','races','bets','profit','profitability'] )
 
 for strat in strategies_2:
-    df.main_df.loc[:,'p'+ strat] = df.main_df.apply(lambda x : x.NumOdds - 1 if ( x['s'+strat] == x['flag_win'] ) & (x['s'+strat])\
+    df.main_test_final.loc[:,'p'+ strat] = df.main_test_final.apply(lambda x : x.NumOdds - 1 if ( x['s'+strat] == x['flag_win'] ) & (x['s'+strat])\
                                         else -1 if ~( x['s'+strat] == x['flag_win'] ) & (x['s'+strat]) \
                                             else 0
                                     , axis=1)
 
     # Adding the Necessary cols
-    bets = df.main_df['s'+strat].sum()
-    races = len(df.main_df.RaceId.unique())
-    profit = df.main_df['p'+strat].sum()
+    bets = df.main_test_final['s'+strat].sum()
+    races = len(df.main_test_final.RaceId.unique())
+    profit = df.main_test_final['p'+strat].sum()
     profitability = round(float(profit/ bets)*100,1)
     
     row_input = [strat, races, bets, profit, str(profitability) + '%' ]
@@ -272,7 +288,11 @@ for strat in strategies_2:
 
 
 
+#----------------------------------------------------------------- SPLITS -----------------------------------------------------------------
 
+sp1 = df.main_test_final.groupby( ['Track_LIVE'] ).agg({ 'RaceId':'nunique'\
+                                                      ,'s2_31':'sum', 'p2_31':'sum','s2_32':'sum', 'p2_32':'sum','s2_33':'sum', 'p2_33':'sum'\
+                                                          ,'s2_34':'sum', 'p2_34':'sum', 's2_35':'sum', 'p2_35':'sum' ,'s2_36':'sum', 'p2_36':'sum'})
 
 
 

@@ -43,8 +43,9 @@ DETAILS
     
 
 NEXT STEPS    
-    - Either get rid of races with missing values
-    - Change the names of the Track to what they ought to be, and then do another merge
+    - (DONE) Either get rid of races with missing values
+    - (DONE) Change the names of the Track to what they ought to be, and then do another merge
+    - Fix The Place Flg (top 3 for races over 8 greys and top 2 for races under 8 greys)
 
 
 """
@@ -86,7 +87,6 @@ if DEBUG : print(df.win.shape)
 # 28,133 for 2021 DEC
 # 322,471 for 2021
 
-summ.win = hd.describe_df(df.win)
 
 del df.win_raw
 
@@ -95,6 +95,8 @@ df.win.loc[ :, "EVENT_DT_INTERIM"] = df.win.EVENT_DT.str.replace('/','-')
 
 df.win.loc[ :, "EVENT_DT_FIX"] = df.win.EVENT_DT_INTERIM.apply(lambda x : pd.to_datetime(x).date() )
 # 02 53 PM
+
+summ.win = hd.describe_df(df.win)
 
 #print(df.win.dtypes)
 
@@ -116,7 +118,6 @@ if DEBUG : print(df.plc.shape)
 # 27,565 for 2021 DEC
 # 315,725 for 2021
 
-summ.plc = hd.describe_df(df.plc)
 
 df.plc.loc[ :, "EVENT_DT_INTERIM"] = df.plc.EVENT_DT.str.replace('/','-')
 df.plc.loc[ :, "EVENT_DT_FIX"] = df.plc.EVENT_DT_INTERIM.apply(lambda x : pd.to_datetime(x).date() )
@@ -128,6 +129,11 @@ del df.plc_raw
 #df.plc.columns
 #qc = df.plc.groupby('EVENT_DT_FIX').agg({'EVENT_ID':'count'})
 #df.plc_heads = df.plc.head(1000)
+
+summ.plc = hd.describe_df(df.plc)
+
+
+
 
 if DEBUG:
     print(df.win.shape)
@@ -278,6 +284,7 @@ df.bf_raw.loc[:,'Event_Dt'] = pd.to_datetime( df.bf_raw[['Year', 'Month', 'Day']
 
 
 summ.df_bf_raw = hd.describe_df(df.bf_raw)
+
 tracks_temp = df.bf_raw.Track.unique()
 
 #Fix Track names to merge on with FT Later
@@ -636,7 +643,33 @@ summ.df_final_v3 = hd.describe_df(df.final_v3)
 
 print(df.final_v3.Place.value_counts())
 
-df.algodata = df.final_v3[ (~df.final_v3.Place.isin(['F','T','nan','P','B','N','D']) ) & (~df.final_v3.Place.isna()) ] 
+
+print(df.final_v3.columns.values.tolist())
+
+print(df.final_v3.Track.unique().tolist())
+
+'''
+    ['Albion Park', 'Angle Park'
+     , 'Ballarat', 'Bathurst', 'Bendigo', 'Broken Hill', 'Bulli', 'Bundaberg'
+     , 'Cannington', 'Capalaba', 'Casino', 'Cranbourne'
+     , 'Dapto', 'Devonport', 'Dubbo'
+     , 'Gawler', 'Geelong', 'Gosford', 'Goulburn', 'Grafton', 'Gunnedah'
+     , 'Healesville', 'Hobart', 'Horsham'
+     , 'Ipswich'
+     , 'Launceston', 'Lismore'
+     , 'Maitland', 'Mandurah', 'Mount Gambier', 'Murray Bridge'
+     , 'Northam', 'Nowra'
+     , 'Richmond', 'Rockhampton'
+     , 'Sale', 'Sandown Park', 'Shepparton'
+     , 'Taree', 'Temora', 'The Gardens', 'Meadows', 'Townsville', 'Traralgon'
+     , 'Wagga', 'Warragul', 'Warrnambool', 'Wentworth Park']
+
+'''
+
+# From Testing w Live Data
+tracks_w_odds = ['Ballarat','Bendigo','Meadows','Traralgon', 'Horsham', 'Sandown Park', 'Shepparton', 'Warragul']
+
+df.algodata = df.final_v3[ (~df.final_v3.Place.isin(['F','T','nan','P','B','N','D']) ) & (~df.final_v3.Place.isna())  &  ( df.final_v3.Track.isin(tracks_w_odds) ) ] 
 
 print(df.algodata.shape)
 print(df.algodata.Place.value_counts())
@@ -646,6 +679,9 @@ print(df.algodata.Place.value_counts())
 
 # 2022 Upto May
 # 104808
+
+# 2022 Upto May (filtered for tracks with odds)
+# 23577
 
 summ.df_algodata = hd.describe_df(df.algodata)
 
@@ -785,6 +821,8 @@ if DEBUG: print(df.algodata.shape)
 # 2022 Upto May
 # 104,808
 
+# 2022 Upto May (filterd for Tracks with Odds)
+# 104,808
 
 
 # Expected
@@ -809,6 +847,8 @@ df.algodata.loc[:,"flag_top2"] = df.algodata["flag_top2"].astype(bool)
 
 df.algodata.loc[:,'flag_top3'] = df.algodata.apply(lambda x : np.nan if pd.isna(x.RANK_) else True if x.RANK_ <= 3 else False, axis = 1)
 df.algodata.loc[:,"flag_top3"] = df.algodata["flag_top3"].astype(bool)
+
+
 
 
 df.algodata.loc[:,"flag_expfav"] = df.algodata.apply(lambda x : np.nan if pd.isna(x.RANK_) else True if x.RANK_ <= 1 else False, axis = 1)
@@ -837,7 +877,6 @@ df.algodata.loc[:,"flag_expeig"] = df.algodata["flag_expeig"].astype(bool)
 
 
 # Actuals
-
 if DEBUG: print(df.algodata.Place.value_counts())
 
 df.algodata['Place'] = df.algodata['Place'].astype(str)
@@ -914,7 +953,6 @@ df.algodata.loc[:,"s1_26"] = ( df.algodata.flag_expsix )
 df.algodata.loc[:,"s1_27"] = ( df.algodata.flag_expsev )
 df.algodata.loc[:,"s1_28"] = ( df.algodata.flag_expeig )
 
-
 df.algodata.loc[:,"s2_1"] = ( df.algodata.flag_top3 )
 #df.algodata.loc[:,"s2_2"] = ( df.algodata.flag_fav )
 
@@ -946,7 +984,6 @@ Evaluation Metrics
 
 #strat = '1_1'
 
-
 print(df.algodata.columns.values.tolist())
 
 print(len(df.algodata.EVENT_ID_WIN.unique()))
@@ -959,12 +996,11 @@ print(df.algodata.shape)
 
 algo_head = df.algodata.head()
 
-
 strategies_1 = ['1_1', '1_11', '1_12', '1_13', '1_21', '1_22', '1_23', '1_24', '1_25', '1_26', '1_27', '1_28']
 strategies_2 = ['2_1', '2_31', '2_32', '2_33', '2_34', '2_35', '2_36', '2_37', '2_38' ]
 
 
-finalres = pd.DataFrame( columns = ['strategy','races','bets','profit','profitability'] )
+finalres = pd.DataFrame( columns = ['strategy','races','bets','profit', 'profitability', 'hits', 'hits_pct'] )
 
 
 for strat in strategies_1:
@@ -972,6 +1008,7 @@ for strat in strategies_1:
                                         else -1 if ~( x['s'+strat] == x['flag_win'] ) & (x['s'+strat]) \
                                             else 0
                                     , axis=1)
+    df.algodata.loc[:,'hit'+ strat] = df.algodata.apply(lambda x : 1 if ( x['s'+strat] == x['flag_win'] ) & (x['s'+strat]) else 0, axis=1)
 
     # Adding the Necessary cols
     races = len(df.algodata.EVENT_ID_WIN.unique())
@@ -979,7 +1016,10 @@ for strat in strategies_1:
     profit = df.algodata['p'+strat].sum()
     profitability = round(float(profit/ bets)*100,1)
     
-    row_input = [strat, races, bets, profit, str(profitability) + '%' ]
+    hits = df.algodata['hit'+strat].sum()
+    hit_pct = round(float(hits/ bets)*100,1)
+    
+    row_input = [strat, races, bets, profit, str(profitability) + '%', hits, hit_pct]
     
     finalres.loc[len(finalres)] = row_input
     
@@ -989,6 +1029,7 @@ for strat in strategies_2:
                                         else -1 if ~( x['s'+strat] == x['flag_plc'] ) & (x['s'+strat]) \
                                             else 0
                                     , axis=1)
+    df.algodata.loc[:,'hit'+ strat] = df.algodata.apply(lambda x : 1 if ( x['s'+strat] == x['flag_plc'] ) & (x['s'+strat]) else 0, axis=1)
 
     # Adding the Necessary cols
     races = len(df.algodata.EVENT_ID_WIN.unique())
@@ -996,7 +1037,10 @@ for strat in strategies_2:
     profit = df.algodata['p'+strat].sum()
     profitability = round(float(profit/ bets)*100,1)
     
-    row_input = [strat, races, bets, profit, str(profitability) + '%' ]
+    hits = df.algodata['hit'+strat].sum()
+    hit_pct = round(float(hits/ bets)*100,1)
+    
+    row_input = [strat, races, bets, profit, str(profitability) + '%', hits, hit_pct ]
     
     finalres.loc[len(finalres)] = row_input
     
@@ -1046,9 +1090,6 @@ df.algodata.sp.plot(kind = 'hist', bins = 50)
 df.algodata['Place'].value_counts()
 
 df.algodata['flag_top3'] = res_.apply( lambda x: True if x.Place <=3 else False , axis = 1 )
-
-
-
 
 
 #----------------------------------------------------------------- EXPLORATORY DATA ANALYSIS -----------------------------------------------------------------

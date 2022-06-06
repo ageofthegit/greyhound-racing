@@ -54,9 +54,15 @@ import betfairlightweight
 from betfairlightweight import filters
 
 
-my_username = "kdsbhatti@gmail.com"
-my_password = "B3tf@1rp@ss"
-my_app_key = "U9o0IvlKooTsPHsv"
+#----------------------------------------------------------------- ENVIRONMENT VARIABLES FOR ACCESS -----------------------------------------------------------------
+
+import os
+
+#FUTURES_API_KEY = os.environ.get('FUTURES_API_KEY')
+
+BETFAIR_USERNAME = os.environ.get('BETFAIR_USERNAME')
+BETFAIR_PASSWORD = os.environ.get('BETFAIR_PASSWORD')
+BETFAIR_APP_KEY = os.environ.get('BETFAIR_APP_KEY')
 
 
 #----------------------------------------------------------------- RETRIEVE BF LISTINGS -----------------------------------------------------------------

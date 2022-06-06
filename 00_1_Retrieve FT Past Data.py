@@ -25,8 +25,12 @@ from betfairlightweight import filters
 
 import fasttrack as ft
 
+#----------------------------------------------------------------- ENVIRONMENT VARIABLES FOR ACCESS -----------------------------------------------------------------
 
-fasttrack_key = "dcc0a791-6b18-4cc4-8d46-453a00e9b7e4"
+import os 
+FASTTRACK_KEY = os.environ.get('FASTTRACK_KEY')
+
+
 greys = ft.Fasttrack(fasttrack_key)
 
 #----------------------------------------------------------------- DOWNLOAD PAST LISTINGS -----------------------------------------------------------------
