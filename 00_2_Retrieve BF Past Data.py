@@ -69,7 +69,7 @@ BETFAIR_APP_KEY = os.environ.get('BETFAIR_APP_KEY')
 
 #----------------------------------------------------------------- Greyhound Event Filter ---------------------------------------------------------------
 
-trading = betfairlightweight.APIClient(my_username, my_password, app_key=my_app_key)
+trading = betfairlightweight.APIClient(BETFAIR_USERNAME, BETFAIR_PASSWORD, app_key=BETFAIR_APP_KEY)
 
 print(trading.login_interactive())
 

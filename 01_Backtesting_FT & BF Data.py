@@ -45,7 +45,8 @@ DETAILS
 NEXT STEPS    
     - (DONE) Either get rid of races with missing values
     - (DONE) Change the names of the Track to what they ought to be, and then do another merge
-    - Fix The Place Flg (top 3 for races over 8 greys and top 2 for races under 8 greys)
+    - (DONE) Fix The Place Flg (top 3 for races over 8 greys and top 2 for races with dogs 5-7 greys) and no place payout when under 5 dogs
+    - Cap the Profitability at some value to avoid miscalculations
 
 
 """
@@ -641,8 +642,8 @@ summ.df_final_v3 = hd.describe_df(df.final_v3)
 # 2022 upto May
 # 0.5% MISMATCH, 618 / 106,037 records 
 
-print(df.final_v3.Place.value_counts())
 
+print(df.final_v3.Place.value_counts())
 
 print(df.final_v3.columns.values.tolist())
 
@@ -669,10 +670,22 @@ print(df.final_v3.Track.unique().tolist())
 # From Testing w Live Data
 tracks_w_odds = ['Ballarat','Bendigo','Meadows','Traralgon', 'Horsham', 'Sandown Park', 'Shepparton', 'Warragul']
 
-df.algodata = df.final_v3[ (~df.final_v3.Place.isin(['F','T','nan','P','B','N','D']) ) & (~df.final_v3.Place.isna())  &  ( df.final_v3.Track.isin(tracks_w_odds) ) ] 
+
+df.final_v3.loc[:,"place_fix"] = df.final_v3.apply( lambda x: str(x['Place']).replace('=',''), axis = 1 )
+print(df.final_v3.place_fix.value_counts())
+
+df.races_dog_count = df.final_v3[~df.final_v3.Place.isin(['F','T','nan','P','B','N','D'])].groupby(by = ['RaceId']).agg({'DogName':'count'}).reset_index().rename(columns = {'DogName':'NumDogs'})
+
+
+df.algodata = pd.merge( 
+                df.final_v3[ (~df.final_v3.Place.isin(['F','T','nan','P','B','N','D']) ) & (~df.final_v3.Place.isna())  &  ( df.final_v3.Track.isin(tracks_w_odds) ) ] , 
+                df.races_dog_count , 
+                on = 'RaceId' ,
+                how = 'left'                
+                )
 
 print(df.algodata.shape)
-print(df.algodata.Place.value_counts())
+print(df.algodata.place_fix.value_counts())
 
 # 2021
 # 265805
@@ -893,7 +906,16 @@ df.algodata.loc[:,'flag_win'] = df.algodata['flag_win'].astype(bool)
 df.algodata.loc[:,'flag_top2'] = df.algodata.apply(lambda x : np.nan if pd.isna(x.pos) else True if x.pos <= 2 else False, axis = 1)
 df.algodata.loc[:,'flag_top2'] = df.algodata['flag_top2'].astype(bool)
 
+'''
 df.algodata.loc[:,"flag_plc"] = df.algodata.apply(lambda x : np.nan if pd.isna(x.pos) else True if x.pos <= 3 else False, axis = 1)
+'''
+
+df.algodata.loc[:,"flag_plc"] = df.algodata.apply(lambda x : np.nan if pd.isna(x.pos) \
+                                                                else True if (x.NumDogs >= 8) & (x.pos <= 3) \
+                                                                    else True if (x.NumDogs >= 5) & (x.pos <= 2) \
+                                                                        else False if (x.NumDogs < 5) \
+                                                                            else False, axis = 1)    
+
 df.algodata.loc[:,"flag_plc"] = df.algodata["flag_plc"].astype(bool)
 
 
@@ -1025,11 +1047,11 @@ for strat in strategies_1:
     
 
 for strat in strategies_2:
-    df.algodata.loc[:,'p'+ strat] = df.algodata.apply(lambda x : x.BSP_PLC - 1 if ( x['s'+strat] == x['flag_plc'] ) & (x['s'+strat])\
-                                        else -1 if ~( x['s'+strat] == x['flag_plc'] ) & (x['s'+strat]) \
+    df.algodata.loc[:,'p'+ strat] = df.algodata.apply(lambda x : x.BSP_PLC - 1 if ( x['s'+strat] == x['flag_plc'] ) & (x['s'+strat]) & (x.NumDogs >=5) \
+                                        else -1 if ~( x['s'+strat] == x['flag_plc'] ) & (x['s'+strat]) & (x.NumDogs >=5) \
                                             else 0
                                     , axis=1)
-    df.algodata.loc[:,'hit'+ strat] = df.algodata.apply(lambda x : 1 if ( x['s'+strat] == x['flag_plc'] ) & (x['s'+strat]) else 0, axis=1)
+    df.algodata.loc[:,'hit'+ strat] = df.algodata.apply(lambda x : 1 if ( x['s'+strat] == x['flag_plc'] ) & (x['s'+strat]) & (x.NumDogs >=5) else 0, axis=1)
 
     # Adding the Necessary cols
     races = len(df.algodata.EVENT_ID_WIN.unique())
@@ -1073,7 +1095,11 @@ df.algodata.groupby(['Track']).agg({'p2_31':'sum', 's1_1':'sum'}).plot(kind = 'b
 df.algodata.groupby(['Track']).agg({'p2_32':'sum', 's1_1':'sum'}).plot(kind = 'bar')
 df.algodata.groupby(['Track']).agg({'p2_33':'sum', 's1_1':'sum'}).plot(kind = 'bar')
 
-df.algodata.groupby(['Track']).agg({'p1_11':'sum', 's1_1':'sum'}).plot(kind = 'bar')
+df.algodata.groupby(['Track']).agg({'p1_26':'sum', 's1_1':'sum'}).plot(kind = 'bar')
+
+df.algodata.groupby(['Month','Day']).agg({'p1_28':'sum', 's1_1':'sum'}).plot(kind = 'bar')
+df.algodata.groupby(['Month','Day']).agg({'p1_26':'sum', 's1_1':'sum'}).plot(kind = 'bar')
+df.algodata.groupby(['Month','Day']).agg({'p1_22':'sum', 's1_1':'sum'}).plot(kind = 'bar')
 
 #----------------------------------------------------------------- Stability  -----------------------------------------------------------------
 

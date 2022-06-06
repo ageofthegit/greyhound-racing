@@ -57,12 +57,12 @@ import fasttrack as ft
  
 #df.races_live = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Live\\races_today_20220531_132pm.csv')
 #df.races_live = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Live\\races_today_live_2022_06_01_07_36.csv')
-df.races_live = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Live\\races_today_live_2022_06_02_07_07.csv')
+df.races_live = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Live\\ft_races_today_live_2022_06_06_18_29.csv')
 summ.races_live = hd.describe_df(df.races_live)
 
 #df.dogs_live = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Live\\dogs_today_20220531_132pm.csv')
 #df.dogs_live = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Live\\dogs_today_live_2022_06_01_07_36.csv')
-df.dogs_live = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Live\\dogs_today_live_2022_06_02_07_07.csv')
+df.dogs_live = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Live\\ft_dogs_today_live_2022_06_06_18_29.csv')
 summ.dogs_live = hd.describe_df(df.dogs_live)
 
 df.live_merge = pd.merge( df.dogs_live, df.races_live, left_on = 'RaceId', right_on = '@id', how = 'left' )
@@ -75,13 +75,13 @@ summ.live_merge = hd.describe_df(df.live_merge)
 #df.races_past = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\race_details_20220531.csv')
 #df.races_past = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\race_details_20220531.csv')
 #df.races_past = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\race_details_20220601.csv')
-df.races_past = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\race_details_20220602.csv')
+df.races_past = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\race_details_20220606.csv')
 summ.races_past = hd.describe_df(df.races_past)
 
 #df.dogs_past = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\dog_results_20220531.csv')
 #df.dogs_past = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\dog_results_20220531.csv')
 #df.dogs_past = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\dog_results_20220601.csv')
-df.dogs_past = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\dog_results_20220602.csv')
+df.dogs_past = pd.read_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\dog_results_20220606.csv')
 summ.dogs_past = hd.describe_df(df.dogs_past)
 
 df.past_merge = pd.merge( df.dogs_past, df.races_past, left_on = 'RaceId', right_on = '@id', how = 'left' )
@@ -97,24 +97,44 @@ print(df.live_merge.columns.values.tolist())
 print(df.past_merge.columns.values.tolist())
 
 
-df.main_merge = pd.merge(
+df.main_merge_interim = pd.merge(
     df.live_merge[['RaceBox','DogName','Odds','Rating','Speed','RaceId','RaceNum','RaceName','RaceTime','Distance','RaceGrade','Track','Date']],
     df.past_merge[['Place','DogName','Box','RaceId','TrainerId','RaceNum','RaceName','RaceTime','Distance','RaceGrade','Track','date']],
     on = ['DogName','RaceId','RaceName'],
     how = 'left' ,
     suffixes = ['_LIVE','_PAST']
     )
+summ.main_merge_interim = hd.describe_df(df.main_merge_interim)
 
 
+#----------------------------------------------------------------- Fix Place Information -----------------------------------------------------------------
+
+df.main_merge_interim.loc[:,"place_fix"] = df.main_merge_interim.apply( lambda x: str(x['Place']).replace('=',''), axis = 1 )
+print(df.main_merge_interim.place_fix.value_counts())
+
+df.races_dog_count = df.main_merge_interim[~df.main_merge_interim.Place.isin(['T','F','S'])].groupby(by = ['RaceId']).agg({'DogName':'count'}).reset_index().rename(columns = {'DogName':'NumDogs'})
+
+df.main_merge = pd.merge(df.main_merge_interim, df.races_dog_count, on = 'RaceId', how = 'left')
 summ.main_merge = hd.describe_df(df.main_merge)
 
+#----------------------------------------------------------------- Find RaceIds w missing Place  -----------------------------------------------------------------
 
+print(df.main_merge_interim.place_fix.value_counts(dropna = False))
+
+raceids_w_missing_placeinfo = df.main_merge[ ( df.main_merge.place_fix.isin(['nan']) ) ]['RaceId'].unique()
+
+#----------------------------------------------------------------- Find RaceIds with no Odds -----------------------------------------------------------------
 
 # Find RaceIds with No Odds
-raceids_w_missingodds = df.main_merge[ ( df.main_merge.Odds.isna() ) ]['RaceId'].unique()
-print(len(raceids_w_missingodds))
+raceids_w_missing_odds = df.main_merge[ ( df.main_merge.Odds.isna() ) ]['RaceId'].unique()
+print(len(raceids_w_missing_odds))
+# 88 races with missing odds
 
-df.main_test_final = df.main_merge[ ~df.main_merge.RaceId.isin(raceids_w_missingodds) ]
+#----------------------------------------------------------------- Remove Missing data  -----------------------------------------------------------------
+
+
+
+df.main_test_final = df.main_merge[ ~df.main_merge.RaceId.isin(list(raceids_w_missing_odds) + list(raceids_w_missing_placeinfo)) ]
 
 print( len(df.main_merge.Track_LIVE.unique()) )
 # 15 races
@@ -124,6 +144,7 @@ print( len(df.main_test_final.Track_LIVE.unique()) )
 
 print( df.main_test_final.Track_LIVE.unique() )
 ''' ['Sandown Park' 'Warragul' 'Shepparton' 'Horsham'] '''
+''' ['Shepparton' 'Traralgon' 'Horsham' 'Ballarat'] '''
 
 
 print( len(df.main_merge.RaceId.unique()) )
@@ -195,12 +216,15 @@ print(df.main_merge.shape)
 
 print(df.main_test_final.columns.values.tolist())
 
-print(df.main_test_final.Place.value_counts())
+#print(df.main_test_final.Place.value_counts())
+print(df.main_test_final.place_fix.value_counts())
 
-df.main_test_final.sort_values(by = ['RaceId', 'NumOdds'], inplace = True)
 
 df.main_test_final.loc[:,"NumOdds"] = df.main_test_final.apply(lambda x : None if pd.isna(x.Odds) else x['Odds'].replace('$','') , axis = 1)
 df.main_test_final["NumOdds"] = df.main_test_final["NumOdds"].astype(float)
+
+df.main_test_final.sort_values(by = ['RaceId', 'NumOdds'], inplace = True)
+
 
 df.main_test_final.loc[:,"ExpPos"] = df.main_test_final.groupby( ['RaceId'] )['NumOdds'].rank("dense", ascending=True)
 
@@ -244,11 +268,16 @@ df.main_test_final["flag_expsixfav"] = df.main_test_final["flag_expsixfav"].asty
 
 
 # Actuals
-df.main_test_final.loc[:,"flag_plc"] = df.main_test_final.apply(lambda x : np.nan if pd.isna(x.NumPlace) else True if x.NumPlace <= 3 else False, axis = 1)
-df.main_test_final["flag_plc"] = df.main_test_final["flag_plc"].astype(bool)
-
 df.main_test_final.loc[:,"flag_win"] = df.main_test_final.apply(lambda x : np.nan if pd.isna(x.NumPlace) else True if x.NumPlace <= 1 else False, axis = 1)
 df.main_test_final["flag_win"] = df.main_test_final["flag_win"].astype(bool)
+
+df.main_test_final.loc[:,"flag_plc"] = df.main_test_final.apply(lambda x : np.nan if pd.isna(x.NumPlace) \
+                                                                else True if (x.NumDogs >= 8) & (x.NumPlace <= 3) \
+                                                                    else True if (x.NumDogs >= 5) & (x.NumPlace <= 2) \
+                                                                        else False if (x.NumDogs < 5) \
+                                                                            else False, axis = 1)    
+df.main_test_final["flag_plc"] = df.main_test_final["flag_plc"].astype(bool)
+
 
 
 # Add as strategy Numbers

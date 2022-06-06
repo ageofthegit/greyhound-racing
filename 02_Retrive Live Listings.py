@@ -84,13 +84,13 @@ print(len(tracks_filter))
 
 filename_suffix = datetime.today().strftime('%Y_%m_%d_%H_%M')
 
-df.ft_races_today, df.ft_dogs_today = greys.getFullFormat('2022-06-06', tracks = tracks_filter)
+df.ft_races_today, df.ft_dogs_today = greys.getFullFormat('2022-06-07', tracks = tracks_filter)
 
 
 print(df.ft_races_today.columns.values.tolist())
 
-df.ft_races_today.loc[:,'racetime_fix'] = pd.to_datetime(df.ft_races_today['RaceTime'], format='%I:%M%p').dt.strftime('%H:%M:%S')
 
+df.ft_races_today.loc[:,'racetime_fix'] = pd.to_datetime(df.ft_races_today['RaceTime'], format='%I:%M%p').dt.strftime('%H:%M:%S')
 
 print(filename_suffix)
 
