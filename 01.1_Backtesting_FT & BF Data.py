@@ -42,12 +42,20 @@ DETAILS
 
     
 
-NEXT STEPS    
+NEXT STEPS
     - (DONE) Either get rid of races with missing values
     - (DONE) Change the names of the Track to what they ought to be, and then do another merge
     - (DONE) Fix The Place Flg (top 3 for races over 8 greys and top 2 for races with dogs 5-7 greys) and no place payout when under 5 dogs
-    - Add capability to Split the profitability by a given variable
+    - (DONE) Add capability to Split the profitability by a given variable
     - Cap the Profitability at some value to avoid miscalculations
+    - Add the -5% of every bet commision for BetFair
+    - Add number of place winner from betfair API instead of the 
+    - Build a neural network model - atleast you will learn something
+    - Think of strategies based on Odds Distribution (classify odds groups and then see if the odds group has any effect on the result)
+        - such as u shaped odds
+        - avg odds
+        - odds standard deviation
+        - 
     
 
 
@@ -175,76 +183,8 @@ summ.df_bf_raw = hd.describe_df(df.bf_raw)
 
 
 '''
-
-MISSING DATA ANALYSIS
-
-
-df.bf_raw_left = pd.merge(df.win, df.plc, on = ['MENU_HINT', 'EVENT_DT_FIX', 'SELECTION_NAME'] , how = 'left', suffixes=('_WIN', '_PLC'))\
-                .sort_values(by = ['EVENT_DT_FIX', 'MENU_HINT', 'SELECTION_NAME'])\
-                    .drop(columns = {'EVENT_DT_WIN', 'EVENT_DT_PLC'})
-
-df.bf_raw_outer = pd.merge(df.win, df.plc, on = ['MENU_HINT', 'EVENT_DT_FIX', 'SELECTION_NAME'] , how = 'outer', suffixes=('_WIN', '_PLC'))\
-                .sort_values(by = ['EVENT_DT_FIX', 'MENU_HINT', 'SELECTION_NAME'])\
-                    .drop(columns = {'EVENT_DT_WIN', 'EVENT_DT_INTERIM_WIN', 'EVENT_DT_PLC', 'EVENT_DT_INTERIM_PLC'})
-
-df.bf_raw_right = pd.merge(df.win, df.plc, on = ['MENU_HINT', 'EVENT_DT_FIX', 'SELECTION_NAME'] , how = 'right', suffixes=('_WIN', '_PLC'))\
-                .sort_values(by = ['EVENT_DT_FIX', 'MENU_HINT', 'SELECTION_NAME'])\
-                    .drop(columns = {'EVENT_DT_WIN', 'EVENT_DT_PLC'})
-
-if DEBUG: print(df.bf_raw.shape)
-# 322,471 for 2021 from 323,473 - There is a nxn match
-
-
-summ.br_raw_left = hd.describe_df(df.bf_raw_left)
-
-
-missing_ids_win_all = df.bf_raw_outer[ df.bf_raw_outer.EVENT_ID_WIN.isna() ][ 'EVENT_ID_PLC' ].values.tolist()
-print(len(missing_ids_win_all)) # 1,367, down to 22
-missing_ids_win = df.bf_raw_outer[ df.bf_raw_outer.EVENT_ID_WIN.isna() ][ 'EVENT_ID_PLC' ].unique().tolist()
-print(len(missing_ids_win)) # 195, down to 6
-
-
-missing_ids_plc_all = df.bf_raw_outer[ df.bf_raw_outer.EVENT_ID_PLC.isna() ][ 'EVENT_ID_WIN' ].values.tolist()
-print(len(missing_ids_plc_all)) # 8,111, down to 6766
-missing_ids_plc = df.bf_raw_outer[ df.bf_raw_outer.EVENT_ID_PLC.isna() ][ 'EVENT_ID_WIN' ].unique().tolist()
-print(len(missing_ids_plc)) # 1486, down to 1300
-
-
-df.bf_raw_left_outer_miss = df.bf_raw_outer[ df.bf_raw_outer.EVENT_ID_WIN.isin(missing_ids_plc) | df.bf_raw_outer.EVENT_ID_PLC.isin(missing_ids_win) ]
-print(df.bf_raw_left_outer_miss.shape) # 9994, down to 7321
-
-summ.br_raw_left_miss = hd.describe_df(df.bf_raw_left_miss)
-
-
-qc = df.plc[df.plc.MENU_HINT.isin(['AUS / Lism (AUS) 4th Jan'])]
-
-
-rup_wins = df.win.groupby(['MENU_HINT','EVENT_DT_FIX']).agg({'EVENT_ID':'count'})
-rup_plac = df.plc.groupby(['MENU_HINT','EVENT_DT_FIX']).agg({'EVENT_ID':'count'})
-
-
-rup = rup_wins.merge(rup_plac, on = ['MENU_HINT','EVENT_DT_FIX'], how = 'outer')
-
-
-print(missing_ids.shape)
-
-summ.df_bf_raw = hd.describe_df(df.bf_raw)
-print(df.bf_raw.shape)
-
-summ.df_bf_raw_outer = hd.describe_df(df.bf_raw_outer)
-print(df.bf_raw_outer.shape)
-
-summ.df_bf_raw_right = hd.describe_df(df.bf_raw_right)
-print(df.bf_raw_right.shape)
-
-
-print(df.win.shape)
-print(df.plc.shape)
-
 FINAL - Win has more data rows 322471 vs Place data of 315725 which is approximately a difference of 6746 rows - Can't do anymore mapping but remove missing races
-
 '''
-
 
 #df.bf_raw.EVENT_NAME_PLC.value_counts(dropna = False)
 
@@ -670,40 +610,38 @@ print(df.final_v3.Track.unique().tolist())
 '''
 
 
+# Need Number of Dogs in Race for correct Place Information
 
-df.final_v3.loc[:,"place_fix"] = df.final_v3.apply( lambda x: str(x['Place']).replace('=',''), axis = 1 )
-print(df.final_v3.place_fix.value_counts())
+#df.final_v3.loc[:,"place_fix"] = df.final_v3.apply( lambda x: str(x['Place']).replace('=',''), axis = 1 )
+#print(df.final_v3.place_fix.value_counts())
 
-df.races_dog_count = df.final_v3[~df.final_v3.Place.isin(['F','T','nan','P','B','N','D'])].groupby(by = ['RaceId']).agg({'DogName':'nunique'}).reset_index().rename(columns = {'DogName':'NumDogs'})
+df.races_dog_count = df.final_v3[~df.final_v3.Place.isin(['nan','N','D'])].groupby(by = ['RaceId']).agg({'DogName':'nunique'}).reset_index().rename(columns = {'DogName':'NumDogs'})
 if DEBUG: print(df.races_dog_count.NumDogs.value_counts())
 
 #df.races_dog_count.NumDogs.value_counts(dropna = False)
 df.races_dog_count.loc[:,'NumDogs_bin'] = df.races_dog_count.apply(lambda x : '8+' if x.NumDogs >= 8 else '5-7' if x.NumDogs >=5 else '4-', axis = 1)
+if DEBUG: print(df.races_dog_count.NumDogs_bin.value_counts())
 
 
 #----------------------------------------------------------- Apply Filters ----------------------------------------------------------- 
 
-# Find RaceId with Missing info
-print(df.main_merge_interim.place_fix.value_counts(dropna = False))
 
-raceids_w_missing_placeinfo = df.main_merge[ ( df.main_merge.place_fix.isin(['nan']) ) ]['RaceId'].unique()
-
-
-# From Testing w Live Data
+# 1) Filter for Tracks that have fastracks Odds
 tracks_w_odds = ['Ballarat','Bendigo','Meadows','Traralgon', 'Horsham', 'Sandown Park', 'Shepparton', 'Warragul']
 
+# 2) Filter for RaceIds with unknown Place Info
+raceids_w_unk_placeinfo = list(df.final_v3[df.final_v3.Place.isin(['N','D'])].RaceId.unique().tolist())
+
 # 3) Filter for RaceIds with missing Place Info
-raceids_w_unk_placeinfo = df.final_v3[df.final_v3.Place.isin(['nan','N','D'])].RaceId.unique().tolist()
+raceids_w_mis_placeinfo = list(df.final_v3[df.final_v3.Place.isin('nan')].RaceId.unique().tolist())
+
 
 df.algodata = pd.merge( 
-                df.final_v3[ (~df.final_v3.Place.isin(['nan','N','D']) ) & (~df.final_v3.Place.isna())  &  ( df.final_v3.Track.isin(tracks_w_odds) ) ] , 
+                df.final_v3[ (~df.final_v3.RaceId.isin(raceids_w_unk_placeinfo + raceids_w_mis_placeinfo) ) &  ( df.final_v3.Track.isin(tracks_w_odds) ) ] , 
                 df.races_dog_count , 
                 on = 'RaceId' ,
                 how = 'left'                
                 )
-
-print(df.algodata.shape)
-print(df.algodata.place_fix.value_counts())
 
 # 2021
 # 265805
@@ -712,131 +650,11 @@ print(df.algodata.place_fix.value_counts())
 # 104808
 
 # 2022 Upto May (filtered for tracks with odds)
-# 23577
+# 23826
 
-summ.df_algodata = hd.describe_df(df.algodata)
+print(df.algodata.shape)
 
-
-'''
-
-df.final_v3.groupby( [ 'Box_x' ] ).agg({'Box_y': lambda x: x.isnull().sum()}).reset_index().rename(columns = {'Box_y':'miss'})
-df.final_v3.groupby( [ 'Event_Dt' ] ).agg({'Box_y': lambda x: x.isnull().sum()}).reset_index().rename(columns = {'Box_y':'miss'})
-df.final_v3.groupby( [ 'Track' ] ).agg({'Box_y': lambda x: x.isnull().sum()}).reset_index().rename(columns = {'Box_y':'miss'})
-
-mh = df.final_v3.groupby( [ 'MENU_HINT' ] ).agg({'Box_y': lambda x: x.isnull().sum()}).reset_index().rename(columns = {'Box_y':'miss'})
-
-print(mh[mh.miss > 0].MENU_HINT.values.tolist())
-
-
-
-df.final_v3_outer = pd.merge( df.bf[ (df.bf['Event_Dt'] >= datetime.datetime.strptime('2021-12-01' , "%Y-%m-%d").date() ) & (df.bf['Event_Dt'] <= datetime.datetime.strptime('2021-12-30' , "%Y-%m-%d").date() ) ]\
-                    , df.ft[ (df.ft['Event_Dt'] >= datetime.datetime.strptime('2021-12-01' , "%Y-%m-%d").date() ) & ( df.ft['Event_Dt'] <= datetime.datetime.strptime('2021-12-30' , "%Y-%m-%d").date() )]\
-                        , on = ['Event_Dt','DogName', 'Track'] , how = 'outer')\
-                            .sort_values(by = ['MENU_HINT','EVENT_NAME_WIN','SELECTION_NAME'])
-
-
-qc = df.final_v3_outer[df.final_v3_outer.Track.isin(['Richmond'])]
-
-qc = df.final_v3_outer[df.final_v3_outer.MENU_HINT.isin( mh[mh.miss > 0].MENU_HINT.values.tolist() )]
-
-
-print(df.final_v3.Track.unique().tolist())
-
-df.final_v3.Place.value_counts()
-
-'''
-
-
-'''
-find out duplicates and a logic to delete the redundant ones
-    which is the correct box - the ones assigned with a number or a letter
-
-'''
-
-
-'''
-#
-qc = df.final[df.final.isna()]
-
-df.final.Event_Dt.value_counts(dropna = False)
-
-
-
-od_bf = df.bf[ df.bf['Event_Dt'] >= datetime.datetime.strptime('2021-12-15' , "%Y-%m-%d").date() ]
-
-od_ft = df.ft[ df.ft['Event_Dt'] >= datetime.datetime.strptime('2021-12-15' , "%Y-%m-%d").date() ]
-
-
-x1 = od_bf.Track.value_counts()
-x2 = od_ft.Track.value_counts()
-
-od_qc_left = pd.merge( od_bf \
-                    , od_ft\
-                        , on = ['Event_Dt','DogName', 'Track'] , how = 'left')\
-                            .sort_values(by = ['MENU_HINT','EVENT_NAME_WIN','SELECTION_NAME'])
-
-print(od_qc_left.shape) # 388 FT Nans from 12456 rows, a missmath % of 3.115
-summ.df.od_qc_left = hd.describe_df(od_qc_left)
-
-
-od_qc_left.groupby( [ 'Box_x' ] ).agg({'Box_y': lambda x: x.isnull().sum()}).reset_index().rename(columns = {'Box_y':'miss'})
-
-pd.crosstab(od_qc_left.Box_x, od_qc_left.Box_y, dropna = False)
-
-print(od_qc_left.Box_x.value_counts())
-'''
-
-
-'''
-1.0     1606
-2.0     1606
-4.0     1597
-8.0     1588
-7.0     1580
-3.0     1394
-6.0     1388
-5.0     1342
-9.0      256
-10.0      99
-Name: Box_x, dtype: int64
-
-'''
-
-'''
-od_qc_righ = pd.merge( od_bf_mg \
-                    , od_ft\
-                        , on = ['Event_Dt','DogName', 'Box'] , how = 'right')\
-                            .sort_values(by = ['MENU_HINT_WIN','EVENT_NAME_WIN','SELECTION_NAME'])
-
-print(od_qc_righ.shape) # 958 rows , 217 Na
-summ.df.od_qc_righ = hd.describe_df(od_qc_righ)
-
-del od_qc_outer
-del summ.df.od_qc_oute 
-
-print(od_bf.Track.unique().tolist())
-print(od_ft.Track.unique().tolist())
-
-
-print(od_bf.columns.values.tolist())
-print(od_ft.columns.values.tolist())
-
-od_qc_outer = pd.merge( od_bf \
-                    , od_ft\
-                        , on = ['Event_Dt','DogName', 'Track'] , how = 'outer')\
-                            .sort_values(by = ['MENU_HINT','EVENT_NAME_WIN','SELECTION_NAME'])
-
-print(od_qc_outer.shape) # 1264,
-summ.df.od_qc_oute = hd.describe_df(od_qc_outer)
-
-print(od_main_mg.Event_Dt.value_counts())
-
-print(df.ft_merg.Event_Dt.value_counts())
-print(df.ft_merg.EVENT_DT.value_counts())
-'''
-
-
-# 4 55 PM
+summ.algodata = hd.describe_df(df.algodata)
 
 
 #----------------------------------------------------------------- STRATEGY ANALYSIS -----------------------------------------------------------------
@@ -868,7 +686,7 @@ df.algodata.loc[:,"sp"] = df.algodata['sp'].astype(float)
 
 
 df.algodata.loc[:,"RANK_"] = df.algodata.groupby( ['RaceId'] )['BSP_WIN'].rank("dense", ascending=True)
-
+df.algodata.RANK_.value_counts(dropna = False)
 
 df.algodata.loc[:,"flag_top1"] = df.algodata.apply(lambda x : np.nan if pd.isna(x.RANK_) else True if x.RANK_ <= 1 else False, axis = 1)
 df.algodata.loc[:,"flag_top1"] = df.algodata["flag_top1"].astype(bool)
@@ -912,6 +730,11 @@ if DEBUG: print(df.algodata.Place.value_counts())
 
 df.algodata['Place'] = df.algodata['Place'].astype(str)
 df.algodata.loc[:,"pos"] = df.algodata.apply( lambda x: x['Place'].replace('=',''), axis = 1 )
+
+df.algodata.loc[:,"pos"] = df.algodata.apply( lambda x: x['pos'].replace('F','10'), axis = 1 )
+df.algodata.loc[:,"pos"] = df.algodata.apply( lambda x: x['pos'].replace('T','10'), axis = 1 )
+df.algodata.loc[:,"pos"] = df.algodata.apply( lambda x: x['pos'].replace('P','10'), axis = 1 )
+df.algodata.loc[:,"pos"] = df.algodata.apply( lambda x: x['pos'].replace('B','10'), axis = 1 )
 
 if DEBUG: print(df.algodata.pos.value_counts(dropna = False))
 
