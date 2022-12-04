@@ -52,7 +52,10 @@ print(len(tracks_filter)) # 113
 #race_details, dog_results = greys.getRaceResults('2022-06-02', '2022-06-02', tracks_filter)
 
 #race_details, dog_results = greys.getRaceResults('2022-01-01', '2022-09-30', tracks_filter)
-race_details, dog_results = greys.getRaceResults('2021-01-01', '2021-12-31', tracks_filter)
+
+#race_details, dog_results = greys.getRaceResults('2022-07-01', '2022-09-30', tracks_filter)
+
+race_details, dog_results = greys.getRaceResults('2022-10-01', '2022-11-28', tracks_filter)
 
 print(type(race_details))
 print(type(dog_results))
@@ -64,7 +67,6 @@ print(race_details.shape)
 print(dog_results.shape)
 
 
-
 #race_details.to_csv( "C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\race_details_20220531.csv" , index = False)
 #dog_results.to_csv( "C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\dog_results_20220531.csv" , index = False)
 
@@ -74,8 +76,11 @@ print(dog_results.shape)
 #race_details.to_csv( "C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\race_details_2022Q1_2022Q2.csv" , index = False)
 #dog_results.to_csv( "C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\dog_results_20220Q1_2022Q2.csv" , index = False)
 
-race_details.to_csv( "C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\race_details_2021Q1_2021Q4.csv" , index = False)
-dog_results.to_csv( "C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\dog_results_2021Q1_2021Q4.csv" , index = False)
+#race_details.to_csv( "C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\race_details_2021Q1_2021Q4.csv" , index = False)
+#dog_results.to_csv( "C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\dog_results_2021Q1_2021Q4.csv" , index = False)
+
+race_details.to_csv( "C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\race_details_2022M10_2022M11.csv" , index = False)
+dog_results.to_csv( "C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\dog_results_2022M10_2022M11.csv" , index = False)
 
 #----------------------------------------------------------------- IMPORT PAST LISTINGS -----------------------------------------------------------------
 

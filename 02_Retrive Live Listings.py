@@ -80,19 +80,27 @@ print(track_codes.state.value_counts())
 tracks_filter = list(track_codes['track_code'])
 print(len(tracks_filter))
 
-#races_today, dogs_today = greys.getBasicFormat('2022-06-01', tracks_filter)
+races_today, dogs_today = greys.getBasicFormat('2022-11-27', tracks_filter)
 
 filename_suffix = datetime.today().strftime('%Y_%m_%d_%H_%M')
 
-df.ft_races_today, df.ft_dogs_today = greys.getFullFormat('2022-06-07', tracks = tracks_filter)
 
 
-print(df.ft_races_today.columns.values.tolist())
+datetoday = datetime.today().strftime('%Y-%m-%d')
+df.ft_races_today, df.ft_dogs_today = greys.getFullFormat(datetoday, tracks = tracks_filter)
+
+df.ft_races_today, df.ft_dogs_today = greys.getFullFormat('2022-11-27', tracks = tracks_filter)
+
+print(df.ft_races_today.shape)
+print(df.ft_dogs_today.shape)
 
 
 df.ft_races_today.loc[:,'racetime_fix'] = pd.to_datetime(df.ft_races_today['RaceTime'], format='%I:%M%p').dt.strftime('%H:%M:%S')
 
 print(filename_suffix)
+
+filename_suffix = '2022_11_29_08_40_for_2022_11_27'
+
 
 df.ft_races_today.to_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Live\\ft_races_today_live_{filename_suffix}.csv', index = False)
 df.ft_dogs_today.to_csv(f'C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Live\\ft_dogs_today_live_{filename_suffix}.csv', index = False)
