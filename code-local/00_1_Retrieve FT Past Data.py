@@ -7,7 +7,8 @@ Created on Thu May 12 18:08:32 2022
 
 # Adding the racing folder to the PATH variable 
 import sys
-sys.path.append('C:\\Users\\karan\\Documents\\Code\\racing')
+#sys.path.append('C:\\Users\\karan\\Documents\\Code\\racing')
+sys.path.append('C:\\Users\\karan\\Documents\\Racing\\greyhound-racing\\code-helpdesk')
 print(sys.path)
 
 # Import libraries
@@ -29,7 +30,6 @@ import fasttrack as ft
 
 import os 
 FASTTRACK_KEY = os.environ.get('FASTTRACK_KEY')
-
 
 
 #----------------------------------------------------------------- DOWNLOAD PAST LISTINGS -----------------------------------------------------------------
@@ -55,7 +55,7 @@ print(len(tracks_filter)) # 113
 
 #race_details, dog_results = greys.getRaceResults('2022-07-01', '2022-09-30', tracks_filter)
 
-race_details, dog_results = greys.getRaceResults('2022-10-01', '2022-11-28', tracks_filter)
+race_details, dog_results = greys.getRaceResults('2023-05-01', '2023-05-07', tracks_filter)
 
 print(type(race_details))
 print(type(dog_results))
@@ -65,7 +65,6 @@ print(dog_results.columns.values.tolist())
 
 print(race_details.shape)
 print(dog_results.shape)
-
 
 #race_details.to_csv( "C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\race_details_20220531.csv" , index = False)
 #dog_results.to_csv( "C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\dog_results_20220531.csv" , index = False)
@@ -79,8 +78,14 @@ print(dog_results.shape)
 #race_details.to_csv( "C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\race_details_2021Q1_2021Q4.csv" , index = False)
 #dog_results.to_csv( "C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\dog_results_2021Q1_2021Q4.csv" , index = False)
 
-race_details.to_csv( "C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\race_details_2022M10_2022M11.csv" , index = False)
-dog_results.to_csv( "C:\\Users\\karan\\Documents\\Data\\racing\\FastTrack\\Past\\dog_results_2022M10_2022M11.csv" , index = False)
+#race_details.to_csv( "C:\\Users\\karan\\Documents\\Racing\\greyhound-racing-data-fasttrack\\Past\\race_details_2023Q1.csv" , index = False)
+#dog_results.to_csv( "C:\\Users\\karan\\Documents\\Racing\\greyhound-racing-data-fasttrack\\Past\\dog_results_2023Q1.csv" , index = False)
+
+#race_details.to_csv( "C:\\Users\\karan\\Documents\\Racing\\greyhound-racing-data-fasttrack\\Past\\race_details_2023M4.csv" , index = False)
+#dog_results.to_csv( "C:\\Users\\karan\\Documents\\Racing\\greyhound-racing-data-fasttrack\\Past\\dog_results_2023M4.csv" , index = False)
+
+race_details.to_csv( "C:\\Users\\karan\\Documents\\Racing\\greyhound-racing-data-fasttrack\\Past\\race_details_2023M5W1.csv" , index = False)
+dog_results.to_csv( "C:\\Users\\karan\\Documents\\Racing\\greyhound-racing-data-fasttrack\\Past\\dog_results_2023M5W1.csv" , index = False)
 
 #----------------------------------------------------------------- IMPORT PAST LISTINGS -----------------------------------------------------------------
 
