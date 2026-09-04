@@ -98,7 +98,7 @@ The model itself is not described here. What follows is the evaluation method, s
 numbers above can be judged on their own terms.
 
 **The data.** Historical form and race results for Australian greyhound racing, paired
-with settled prices from a major betting exchange. Roughly 870,000 runner-races.
+with settled market prices from the Betfair exchange. Roughly 870,000 runner-races.
 
 **The comparison.** All three strategies are scored on *identical races*, at the *same
 prices*, over the *same period*. No strategy sees a race the others don't. The random
