@@ -12,7 +12,7 @@ same market prices. In a market with a built-in margin, that is the result worth
 
 **27 November 2022 · held-out data · return on investment**
 
-| Market | FastTrack benchmark | **This model** | Random baseline |
+| Market | Benchmark | **This model** | Random baseline |
 |:--|--:|--:|--:|
 | Win | −13.50% | **−9.92%** | −25.41% |
 | Top-3 | −16.76% | **−14.73%** | −22.76% |
@@ -35,20 +35,20 @@ every run, both splits, all three strategies.
 
 | Strategy | What it does |
 |---|---|
-| **FastTrack** | The incumbent form guide's own ranking. The benchmark to beat. |
+| **Benchmark** | The incumbent form guide's own published ranking. The bar to beat. |
 | **Model** | This project's neural network. |
 | **Random** | Random selection. The floor — establishes what zero skill looks like. |
 
 **Two markets:** *win* backs the top-ranked runner; *top-3* backs the leading selections in
 a place-style market (top 3 in fields of 8+, top 2 in fields of 5–7).
 
-**ROI, not raw profit.** The strategies stake different numbers of bets — FastTrack 21,235
+**ROI, not raw profit.** The strategies stake different numbers of bets — the benchmark 21,235
 against the model's 20,470 on the headline run — so absolute profit isn't comparable.
 Return per unit staked is.
 
 **Why nothing is profitable.** Betting markets carry an overround: the implied
 probabilities sum to more than 100%, and the difference is the house's. A model can rank
-runners genuinely well and still lose money. FastTrack picks the winner **40% of the time**
+runners genuinely well and still lose money. The benchmark picks the winner **40% of the time**
 and still returns −13.5%. Clearing that margin is a much higher bar than beating the
 benchmark, and this model did not clear it. What it did was lose less than a benchmark that
 is itself strong.
@@ -62,7 +62,7 @@ five late-November runs — the largest evaluation windows, ~19–22k win bets e
 
 Held-out (test) figures. `Run` matches the `run_seq` column in the published data.
 
-| Run | Date | Win bets | Market | FastTrack | Model | Random | Beats benchmark |
+| Run | Date | Win bets | Market | Benchmark | Model | Random | Beats benchmark |
 |---|---|--:|---|--:|--:|--:|:--:|
 | R06 | 27 Nov | 21,235 | win | −13.50% | **−9.92%** | −25.41% | ✅ |
 | | | | top-3 | −16.76% | **−14.73%** | −22.76% | ✅ |
@@ -98,7 +98,7 @@ The model itself is not described here. What follows is the evaluation method, s
 numbers above can be judged on their own terms.
 
 **The data.** Historical form and race results for Australian greyhound racing, paired
-with settled market prices from the Betfair exchange. Roughly 870,000 runner-races.
+with settled prices from a major betting exchange. Roughly 870,000 runner-races.
 
 **The comparison.** All three strategies are scored on *identical races*, at the *same
 prices*, over the *same period*. No strategy sees a race the others don't. The random
@@ -123,7 +123,7 @@ their edge from training to held-out data. The December runs, evaluated on windo
 to a sixth that size, hold the top-3 edge but not the win edge. Both are in the table
 above and in the data.
 
-**The benchmark is stable throughout.** FastTrack returns between −12.82% and −14.28%
+**The benchmark is stable throughout.** It returns between −12.82% and −14.28%
 across every run, November and December alike — so the comparison is measuring the model,
 not a change in the races.
 
